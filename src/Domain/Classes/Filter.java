@@ -220,7 +220,7 @@ public class Filter {
     }
 
     public FiltersDTO getFilters() {
-        return new FiltersDTO(checkedTypes, checkedGenres, minimumYearValue, maximumYearValue, minimumRatingValue, maximumRatingValue);
+        return new FiltersDTO(checkedTypes, checkedGenres, minimumYearValue, maximumYearValue, minimumRatingValue, maximumRatingValue, (ArrayList<String>) keywords);
     }
 
     public void setFilters(FiltersDTO filters) {
@@ -230,5 +230,6 @@ public class Filter {
         maximumYearValue = filters.getMaximumYearValue();
         minimumRatingValue = filters.getMinimumRatingValue();
         maximumRatingValue = filters.getMaximumRatingValue();
+        keywords = filters.getKeywords();
     }
 }

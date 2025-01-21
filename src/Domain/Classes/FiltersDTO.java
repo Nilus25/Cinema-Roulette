@@ -1,20 +1,24 @@
 package Domain.Classes;
 
+import java.util.ArrayList;
+
 public class FiltersDTO{
     private boolean[] checkedTypes;
     private boolean[] checkedGenres;
     private int minimumYearValue;
     private int maximumYearValue;
-    private double minimumRatingValue;
-    private double maximumRatingValue;
+    private Double minimumRatingValue;
+    private Double maximumRatingValue;
+    private ArrayList<String> keywords;
 
-    public FiltersDTO(boolean[] checkedTypes, boolean[] checkedGenres, int minimumYearValue, int maximumYearValue, double minimumRatingValue, double maximumRatingValue) {
+    public FiltersDTO(boolean[] checkedTypes, boolean[] checkedGenres, int minimumYearValue, int maximumYearValue, double minimumRatingValue, double maximumRatingValue, ArrayList<String> keywords) {
         this.checkedTypes = checkedTypes;
         this.checkedGenres = checkedGenres;
         this.minimumYearValue = minimumYearValue;
         this.maximumYearValue = maximumYearValue;
         this.minimumRatingValue = minimumRatingValue;
         this.maximumRatingValue = maximumRatingValue;
+        this.keywords = keywords;
     }
 
     public boolean[] getCheckedTypes() {
@@ -64,5 +68,12 @@ public class FiltersDTO{
     public void setMaximumRatingValue(double maximumRatingValue) {
         this.maximumRatingValue = maximumRatingValue;
     }
-    
+
+    public ArrayList<String> getKeywords() {
+        return keywords;
+    }
+
+    public void setKeywords(ArrayList<String> keywords) {
+        this.keywords = keywords;
+    }
 }

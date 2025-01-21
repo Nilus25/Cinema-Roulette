@@ -62,7 +62,5 @@ public interface Model {
 
     List<String> getCurrentMovieInformation();
 
-    FiltersView getFiltersView();
-
     Watchlist getFilteredWatchlist();
 }

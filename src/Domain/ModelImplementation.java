@@ -23,7 +23,6 @@ public class ModelImplementation implements Model {
     private Watchlist filteredWatchlist;
     private Movie currentMovie;
     private MainView mainView;
-    private FiltersView filtersView;
     private List<Observer> observers;
     private List<ObserverComboBoxes> observerComboBoxes;
 
@@ -36,8 +35,6 @@ public class ModelImplementation implements Model {
         mainView.initializeController();
         selector = new RandomMovieSelector(this);
         filter = new Filter();
-        filtersView = new FiltersView(this);
-        filtersView.initializeController();
         addObserver(mainView);
         addObserverComboBox(mainView);
         notifyObservers();
@@ -113,6 +110,7 @@ public class ModelImplementation implements Model {
     @Override
     public void setFilters(FiltersDTO filters) {
         filter.setFilters(filters);
+        filterWatchlist();
     }
 
     @Override
@@ -165,11 +163,6 @@ public class ModelImplementation implements Model {
     @Override
     public List<String> getCurrentMovieInformation() {
         return currentMovie.getInformation();
-    }
-
-    @Override
-    public FiltersView getFiltersView() {
-        return filtersView;
     }
 
     @Override
