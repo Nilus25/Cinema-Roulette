@@ -12,8 +12,8 @@ public class Filter {
     public static final int MAXIMUMYEAR = Year.now().getValue();
     private int minimumYearValue = MINIMUMYEAR;
     private int maximumYearValue = MAXIMUMYEAR;
-    private boolean[] checkedTypes;
-    private boolean[] checkedGenres;
+    private boolean[] checkedTypes = new boolean[TYPEARRAY.length];
+    private boolean[] checkedGenres = new boolean[GENREARRAY.length];
     private final Map<String, Integer> types;
     private final Map<String, Integer> genres;
     private List<String> keywords = new ArrayList<>();
@@ -31,7 +31,6 @@ public class Filter {
     }
 
     private void initializeTypes() {
-        checkedTypes = new boolean[TYPEARRAY.length];
         for (int i = 0; i < TYPEARRAY.length; i++) {
             types.put(TYPEARRAY[i], i);
             checkedTypes[i] = true;
@@ -39,7 +38,6 @@ public class Filter {
     }
 
     private void initializeGenres() {
-        checkedGenres = new boolean[GENREARRAY.length];
         for (int i = 0; i < GENREARRAY.length; i++) {
             genres.put(GENREARRAY[i], i);
             checkedGenres[i] = true;

@@ -1,6 +1,7 @@
 package Domain;
 
 import Domain.Classes.FiltersDTO;
+import Domain.Classes.Movie;
 import Domain.Classes.User;
 import Domain.Classes.Watchlist;
 import Domain.Exceptions.MovieNotFoundException;
@@ -60,7 +61,13 @@ public interface Model {
 
     void addLastMovieGeneratedForUserToSeen();
 
+    void addMovieToSeen(Movie movie);
+
+    void deleteMovieFromSeen(Movie movie);
+
     List<String> getCurrentMovieInformation();
 
     Watchlist getFilteredWatchlist();
+
+    boolean userHasSeenMovie(Movie movie);
 }

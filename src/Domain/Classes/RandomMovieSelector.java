@@ -13,7 +13,7 @@ public class RandomMovieSelector{
     public Movie execute() throws MovieNotFoundException {
         String tag = mode.selectRandomMovie();
         Movie currentMovie = model.getFilteredWatchlist().getMovieByTag(tag);
-        URLOpener.openURL(currentMovie.getURL());
+        currentMovie.openIMDB();
         return currentMovie;
     }
     public void setModeRandom() {

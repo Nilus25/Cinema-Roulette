@@ -103,6 +103,8 @@ public class MainView extends JFrame implements Observer, ObserverComboBoxes {
         deleteUserButton.setEnabled(hasUser);
         deleteWatchListButton.setEnabled(hasWatchList);
         actualizeWatchListButton.setEnabled(hasWatchList);
+        filtersButton.setEnabled(hasWatchList);
+        viewWatchListButton.setEnabled(hasWatchList);
         addMovieToSeenButton.setEnabled(hasUser && hasCurrentMovie);
         generateButton.setEnabled(hasUser && hasWatchList);
         if (hasCurrentMovie){

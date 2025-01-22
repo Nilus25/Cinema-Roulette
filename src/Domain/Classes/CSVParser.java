@@ -25,8 +25,11 @@ public class CSVParser {
             String rating = nextLine[9];
             String type = nextLine[8];
             List<String> genres = List.of(nextLine[12].split(","));
-
-            Movie movie = new Movie(title, IMDBTag, URL, director, year, rating, type, genres);
+            List<String> trimmedGenres = new ArrayList<>();
+            for (int i = 0; i < genres.size(); i++) {
+                trimmedGenres.add(genres.get(i).trim());
+            }
+            Movie movie = new Movie(title, IMDBTag, URL, director, year, rating, type, trimmedGenres);
             movies.add(movie);
         }
 

@@ -6,9 +6,7 @@ import DataLayer.UserFinder;
 import DataLayer.UserGateway;
 import DataLayer.WatchListFinder;
 import DataLayer.WatchListGateway;
-import Presentation.FiltersView;
 import Presentation.MainView;
-import Presentation.MainViewController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,9 +72,6 @@ public class ModelImplementation implements Model {
 
     public void setWatchlist(Watchlist watchlist) {
         this.watchlist = watchlist;
-        if (watchlist != null) {
-            System.out.println(watchlist.getName());
-        }
         notifyObservers();
     }
     @Override
@@ -154,12 +149,24 @@ public class ModelImplementation implements Model {
         UserGateway gateway = new UserGateway(user);
         gateway.save();
     }
+    @Override
     public void addLastMovieGeneratedForUserToSeen() {
         user.addMovie(user.getLastMovieGenerated());
         UserGateway gateway = new UserGateway(user);
         gateway.save();
     }
-
+    @Override
+    public void addMovieToSeen(Movie movie) {
+        user.addMovie(movie);
+        UserGateway gateway = new UserGateway(user);
+        gateway.save();
+    }
+    @Override
+    public void deleteMovieFromSeen(Movie movie) {
+        user.deleteMovie(movie);
+        UserGateway gateway = new UserGateway(user);
+        gateway.save();
+    }
     @Override
     public List<String> getCurrentMovieInformation() {
         return currentMovie.getInformation();
@@ -168,6 +175,11 @@ public class ModelImplementation implements Model {
     @Override
     public Watchlist getFilteredWatchlist() {
         return filteredWatchlist;
+    }
+
+    @Override
+    public boolean userHasSeenMovie(Movie movie) {
+        return user.hasSeen(movie);
     }
 
     public void setCurrentMovie(Movie currentMovie) {

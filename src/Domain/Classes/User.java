@@ -40,4 +40,12 @@ public class User {
     public boolean LastMovieGeneratedAlreadySeen() {
         return seenMovies.contains(lastMovieGenerated);
     }
+
+    public void deleteMovie(Movie movie) {
+        seenMovies.remove(movie);
+    }
+
+    public boolean hasSeen(Movie movie) {
+        return seenMovies.contains(movie);
+    }
 }

@@ -24,8 +24,7 @@ public class FiltersView extends JDialog {
     private JButton resetFiltersButton;
     private JButton applyFiltersButton;
     private JButton cancelButton;
-    private JLabel YearLabel;
-    private JPanel MinYearLabel;
+    private JLabel minYearLabel;
     private JLabel maxYearLabel;
     private JLabel maxRatingLabel;
     private JLabel minRatingLabel;
@@ -34,11 +33,21 @@ public class FiltersView extends JDialog {
     private JPanel genresScrollBar;
     private JPanel typesScrollBar;
     private JLabel keywordsLabel;
+    private JButton deselectGenresButton;
+    private JButton selectAllGenresButton;
+    private JButton deselectAllTypesButton;
+    private JButton selectAllTypesButton;
+    private JPanel YearRatingPanel;
+    private JPanel KeywordsPanel;
+    private JPanel ButtonsPanel;
+    private JPanel GenreTypePanel;
+    private JScrollPane keywordsScrollPane;
 
     public FiltersView(Model model, JFrame parent) {
+        super(parent, "Filters", true);
         this.model = model;
         setContentPane(mainPanel);
-        setSize(900, 600);
+        setSize(900, 650);
         setLocationRelativeTo(parent);
         initialize();
         setFilters(model.getFilters());
@@ -53,6 +62,10 @@ public class FiltersView extends JDialog {
         resetFiltersButton.addActionListener(filtersViewController);
         applyFiltersButton.addActionListener(filtersViewController);
         cancelButton.addActionListener(filtersViewController);
+        deselectGenresButton.addActionListener(filtersViewController);
+        selectAllGenresButton.addActionListener(filtersViewController);
+        deselectAllTypesButton.addActionListener(filtersViewController);
+        selectAllTypesButton.addActionListener(filtersViewController);
 
     }
 
@@ -83,6 +96,19 @@ public class FiltersView extends JDialog {
         return cancelButton;
     }
 
+    public JButton getDeselectGenresButton() {
+        return deselectGenresButton;
+    }
+    public JButton getSelectAllGenresButton() {
+        return selectAllGenresButton;
+    }
+    public JButton getDeselectAllTypesButton() {
+        return deselectAllTypesButton;
+    }
+    public JButton getSelectAllTypesButton() {
+        return selectAllTypesButton;
+    }
+
     private void initialize() {
         genresScrollBar.setLayout(new GridLayout(4, 7));
         typesScrollBar.setLayout(new GridLayout(3, 5));
@@ -108,6 +134,7 @@ public class FiltersView extends JDialog {
         maxRatingSpinner.setEditor(maxRatingEditor);
         JSpinner.NumberEditor minRatingEditor = new JSpinner.NumberEditor(minRatingSpinner, "#0.0");
         minRatingSpinner.setEditor(minRatingEditor);
+        keywordsScrollPane.setPreferredSize(new Dimension(356,132));
     }
 
     public void resetFilters() {
@@ -122,6 +149,7 @@ public class FiltersView extends JDialog {
             ((JCheckBox) typesScrollBar.getComponent(i)).setSelected(false);
         }
         keywordsList.setListData(new String[0]);
+        keywordTextField.setText("");
     }
 
     public void setFilters(FiltersDTO filters) {
@@ -152,9 +180,7 @@ public class FiltersView extends JDialog {
             checkedTypes[i] = ((JCheckBox) typesScrollBar.getComponent(i)).isSelected();
         }
         ArrayList<String> keywords = getAllValues(keywordsList);
-        FiltersDTO filters = new FiltersDTO(checkedTypes, checkedGenres, minimumYearValue, maximumYearValue, minimumRatingValue, maximumRatingValue, keywords);
-        return filters;
-
+        return new FiltersDTO(checkedTypes, checkedGenres, minimumYearValue, maximumYearValue, minimumRatingValue, maximumRatingValue, keywords);
     }
 
     private ArrayList<String> getAllValues(JList keywordsList) {
@@ -170,16 +196,50 @@ public class FiltersView extends JDialog {
     }
 
     public void deleteKeyword() {
-        DefaultListModel<String> model = (DefaultListModel<String>) keywordsList.getModel();
-        keywordsList.getSelectedValuesList().forEach(model::removeElement);
+        ArrayList<String> model = new ArrayList<>();
+        for (int i = 0; i < keywordsList.getModel().getSize(); i++) {
+            if (!keywordsList.isSelectedIndex(i)){
+                model.add((String) keywordsList.getModel().getElementAt(i));
+            }
+        }
+        keywordsList.setListData(model.toArray(new String[0]));
     }
 
     public void addKeyword() {
-        DefaultListModel<String> model = (DefaultListModel<String>) keywordsList.getModel();
-        model.addElement(keywordTextField.getText());
+        ArrayList<String> model = new ArrayList<>();
+        for (int i = 0; i < keywordsList.getModel().getSize(); i++) {
+            model.add((String) keywordsList.getModel().getElementAt(i));
+        }
+        model.add(keywordTextField.getText());
+        keywordsList.setListData(model.toArray(new String[0]));
+        keywordTextField.setText("");
     }
 
     public void close() {
         this.dispose();
+    }
+
+    public void selectAllTypes() {
+        for (int i = 0; i < Filter.TYPEARRAY.length; i++) {
+            ((JCheckBox) typesScrollBar.getComponent(i)).setSelected(true);
+        }
+    }
+
+    public void deselectAllTypes() {
+        for (int i = 0; i < Filter.TYPEARRAY.length; i++) {
+            ((JCheckBox) typesScrollBar.getComponent(i)).setSelected(false);
+        }
+    }
+
+    public void selectAllGenres() {
+        for (int i = 0; i < Filter.GENREARRAY.length; i++) {
+            ((JCheckBox) genresScrollBar.getComponent(i)).setSelected(true);
+        }
+    }
+
+    public void deselectGenres() {
+        for (int i = 0; i < Filter.GENREARRAY.length; i++) {
+            ((JCheckBox) genresScrollBar.getComponent(i)).setSelected(false);
+        }
     }
 }

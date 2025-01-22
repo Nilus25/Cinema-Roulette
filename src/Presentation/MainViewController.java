@@ -44,6 +44,8 @@ public class MainViewController implements ActionListener {
     }
 
     private void handleViewWatchListButton() {
+        WatchlistView watchlistView = new WatchlistView(model, view);
+        watchlistView.setVisible(true);
     }
 
     private void handleFiltersButton() {

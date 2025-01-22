@@ -1,5 +1,7 @@
 package Domain.Classes;
 
+import Domain.URLOpener;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -84,5 +86,9 @@ public class Movie {
         information.add(rating);
         information.add(type);
         return information;
+    }
+
+    public void openIMDB() {
+        URLOpener.openURL(URL);
     }
 }

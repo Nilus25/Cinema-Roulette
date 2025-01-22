@@ -24,7 +24,27 @@ public class FiltersViewController implements ActionListener {
         actionMap.put(filtersView.getResetFiltersButton(), this::handleResetFiltersButton);
         actionMap.put(filtersView.getApplyFiltersButton(), this::handleApplyFiltersButton);
         actionMap.put(filtersView.getCancelButton(), this::handleCancelButton);
+        actionMap.put(filtersView.getDeselectGenresButton(), this::handleDeselectGenresButton);
+        actionMap.put(filtersView.getSelectAllGenresButton(), this::handleSelectAllGenresButton);
+        actionMap.put(filtersView.getDeselectAllTypesButton(), this::handleDeselectAllTypesButton);
+        actionMap.put(filtersView.getSelectAllTypesButton(), this::handleSelectAllTypesButton);
 
+    }
+
+    private void handleSelectAllTypesButton() {
+        filtersView.selectAllTypes();
+    }
+
+    private void handleDeselectAllTypesButton() {
+        filtersView.deselectAllTypes();
+    }
+
+    private void handleSelectAllGenresButton() {
+        filtersView.selectAllGenres();
+    }
+
+    private void handleDeselectGenresButton() {
+        filtersView.deselectGenres();
     }
 
     private void handleCancelButton() {
@@ -33,6 +53,7 @@ public class FiltersViewController implements ActionListener {
 
     private void handleApplyFiltersButton() {
         model.setFilters(filtersView.getFilters());
+        filtersView.close();
     }
 
     private void handleResetFiltersButton() {
