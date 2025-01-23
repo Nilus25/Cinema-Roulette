@@ -8,8 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class FiltersViewController implements ActionListener {
-    private Model model;
-    private FiltersView filtersView;
+    private final Model model;
+    private final FiltersView filtersView;
     private Map<Object, Runnable> actionMap;
     public FiltersViewController(Model model, FiltersView filtersView) {
         this.model = model;

@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class User {
-    private String name;
-    private List<Movie> seenMovies;
+    private final String name;
+    private final List<Movie> seenMovies;
     private Movie lastMovieGenerated;
     public User(String name) {
         this.name = name;

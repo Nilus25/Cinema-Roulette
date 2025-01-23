@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Watchlist {
-    private String name;
-    private List<Movie> watchlist;
+    private final String name;
+    private final List<Movie> watchlist;
     public Watchlist(String name, String watchList){
         this.name = name;
         try {

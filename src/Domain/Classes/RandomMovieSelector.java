@@ -4,7 +4,7 @@ import Domain.*;
 import Domain.Exceptions.MovieNotFoundException;
 
 public class RandomMovieSelector{
-    private Model model;
+    private final Model model;
     SelectorMode mode;
     public RandomMovieSelector(Model model){
         this.model = model;

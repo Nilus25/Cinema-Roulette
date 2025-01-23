@@ -8,8 +8,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class WatchlistViewController implements ActionListener {
-    private WatchlistView watchlistView;
-    private Model model;
+    private final WatchlistView watchlistView;
+    private final Model model;
     public WatchlistViewController(WatchlistView watchlistView, Model model) {
         this.watchlistView = watchlistView;
         this.model = model;

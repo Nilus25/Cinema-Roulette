@@ -9,7 +9,7 @@ import java.awt.*;
 import java.util.ArrayList;
 
 public class FiltersView extends JDialog {
-    private Model model;
+    private final Model model;
     private FiltersViewController filtersViewController;
     private JPanel mainPanel;
     private JTextField keywordTextField;

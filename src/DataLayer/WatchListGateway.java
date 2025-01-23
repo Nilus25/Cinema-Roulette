@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WatchListGateway {
-    private String name;
-    private List<Movie> watchList;
+    private final String name;
+    private final List<Movie> watchList;
     private static final String location = "data/watchlist";
     public WatchListGateway(Watchlist watchList){
         this.name = watchList.getName();

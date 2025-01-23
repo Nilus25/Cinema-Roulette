@@ -6,14 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Movie {
-    private String title;
-    private String IMDBTag;
-    private String URL;
-    private String director;
-    private String year;
-    private String rating;
-    private String type;
-    private List<String> genres;
+    private final String title;
+    private final String IMDBTag;
+    private final String URL;
+    private final String director;
+    private final String year;
+    private final String rating;
+    private final String type;
+    private final List<String> genres;
     public String getTitle() {
         return title;
     }

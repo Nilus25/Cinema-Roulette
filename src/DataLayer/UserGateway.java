@@ -10,9 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UserGateway {
-    private String name;
-    private List<Movie> seenMovies;
-    private Movie lastMovieGenerated;
+    private final String name;
+    private final List<Movie> seenMovies;
+    private final Movie lastMovieGenerated;
     private static final String location = "data/user";
     public UserGateway(String name) {
         this.name = name;

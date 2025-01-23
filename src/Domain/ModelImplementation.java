@@ -13,16 +13,16 @@ import java.util.List;
 
 public class ModelImplementation implements Model {
     private User user;
-    private List<String> usersNames;
+    private final List<String> usersNames;
     private Watchlist watchlist;
-    private List<String> watchlistsNames;
+    private final List<String> watchlistsNames;
     private final RandomMovieSelector selector;
     private Filter filter;
     private Watchlist filteredWatchlist;
     private Movie currentMovie;
-    private MainView mainView;
-    private List<Observer> observers;
-    private List<ObserverComboBoxes> observerComboBoxes;
+    private final MainView mainView;
+    private final List<Observer> observers;
+    private final List<ObserverComboBoxes> observerComboBoxes;
 
     public ModelImplementation() {
         usersNames = UserFinder.getAllUsersName();

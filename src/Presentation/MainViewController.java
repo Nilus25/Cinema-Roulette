@@ -18,8 +18,8 @@ import java.util.Map;
 import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE;
 
 public class MainViewController implements ActionListener {
-    private Model model;
-    private MainView view;
+    private final Model model;
+    private final MainView view;
     private Map<Object, Runnable> actionMap;
     public MainViewController(Model model, MainView view) {
         this.view = view;

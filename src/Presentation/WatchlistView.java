@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WatchlistView extends JDialog {
-    private Model model;
+    private final Model model;
     private WatchlistViewController watchlistViewController;
     private JPanel panel1;
     private JButton okButton;
@@ -22,7 +22,7 @@ public class WatchlistView extends JDialog {
     private JButton deleteFromSeenButton;
     private JButton selectAllButton;
     private JButton deselectAllButton;
-    private List<WatchlistGUIItem> selectedMovies = new ArrayList<>();
+    private final List<WatchlistGUIItem> selectedMovies = new ArrayList<>();
 
     public WatchlistView(Model model, JFrame parent) {
         super(parent, "Watchlist", true);
@@ -162,8 +162,8 @@ class WatchlistGUIItem extends JPanel {
     private final WatchlistView parent;
     private final Movie movie;
     private boolean selected = false;
-    private JPanel contentPanel;
-    private JPanel seenPanel;
+    private final JPanel contentPanel;
+    private final JPanel seenPanel;
 
     public WatchlistGUIItem(Movie movie, WatchlistView watchlistView, int watchlistPanelWidth) {
         this.parent = watchlistView;
