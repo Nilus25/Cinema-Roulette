@@ -28,3 +28,4 @@ Run the JAR file using the following command:
 ```sh
 java -jar path/to/IMDBSelector.jar
 ```
+Executable (Windows): Use the executable file.
