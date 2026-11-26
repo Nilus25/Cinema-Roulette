@@ -84,7 +84,7 @@ public final class AppAssembler implements AutoCloseable {
             config.bundledPlugins.enableCors(cors -> cors.addRule(rule -> {
                 rule.allowCredentials = true;
                 if ("*".equals(allowedOrigin)) {
-                    rule.anyHost();
+                    rule.reflectClientOrigin = true;
                 } else {
                     rule.allowHost(allowedOrigin);
                 }
