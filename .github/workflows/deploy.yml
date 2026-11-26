@@ -1,0 +1,91 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Oracle VPS
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+
+    steps:
+      - name: Configure SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Sync code, write .env.prod, and redeploy Docker Compose
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ secrets.VPS_APP_DIR }}
+          DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          set -euo pipefail
+          REMOTE_DIR="${APP_DIR:-~/cinema-roulette}"
+          PG_USER="${POSTGRES_USER:-imdb}"
+
+          ssh -i ~/.ssh/deploy_key "${VPS_USER}@${VPS_HOST}" "mkdir -p ${REMOTE_DIR}"
+
+          ssh -i ~/.ssh/deploy_key "${VPS_USER}@${VPS_HOST}" \
+            "umask 077 && cat > ${REMOTE_DIR}/.env.prod" <<EOF
+          DOMAIN_NAME=${DOMAIN_NAME}
+          CORS_ORIGIN=https://${DOMAIN_NAME}
+          POSTGRES_USER=${PG_USER}
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          JWT_SECRET=${JWT_SECRET}
+          EOF
+
+          ssh -i ~/.ssh/deploy_key "${VPS_USER}@${VPS_HOST}" bash -s <<EOF
+          set -euo pipefail
+          cd ${REMOTE_DIR}
+          if [ ! -d .git ]; then
+            git clone https://github.com/${{ github.repository }}.git .
+          fi
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+          chmod 600 .env.prod
+          chmod +x scripts/backup-postgres.sh
+          docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans
+          docker image prune -f
+          EOF
+
+      - name: Verify HTTPS health endpoint
+        env:
+          DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 18); do
+            if curl -fsS "https://${DOMAIN_NAME}/api/health" | grep -q '"UP"'; then
+              echo "Health check passed!"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Health check failed after 90s"
+          exit 1

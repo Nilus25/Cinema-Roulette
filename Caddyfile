@@ -1,6 +1,8 @@
 {$DOMAIN_NAME} {
     encode gzip zstd
 
+    header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
     handle /api/* {
         reverse_proxy backend:8080
     }
