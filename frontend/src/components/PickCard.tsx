@@ -3,6 +3,7 @@ import type { MediaItemResponse } from '../types/api';
 
 interface PickCardProps {
   canPick: boolean;
+  candidateCount: number;
   loading: boolean;
   picked: MediaItemResponse | null;
   hasUser: boolean;
@@ -10,28 +11,38 @@ interface PickCardProps {
   onMarkSeen: (imdbId: string) => Promise<void>;
 }
 
-export function PickCard({ canPick, loading, picked, hasUser, onPick, onMarkSeen }: PickCardProps) {
+export function PickCard({
+  canPick,
+  candidateCount,
+  loading,
+  picked,
+  hasUser,
+  onPick,
+  onMarkSeen,
+}: PickCardProps) {
   const isSeries = picked?.mediaType.toLowerCase().includes('tv');
 
   return (
     <div className="space-y-5">
       <button
         type="button"
-        disabled={!canPick || loading}
+        disabled={!canPick || loading || candidateCount === 0}
         onClick={onPick}
         className="neo-btn-primary flex w-full items-center justify-center gap-3 px-6 py-4 font-display text-lg font-extrabold tracking-wide disabled:cursor-not-allowed"
       >
         <Dices className={`h-6 w-6 ${loading ? 'animate-spin' : ''}`} />
-        <span>{loading ? 'Rolling...' : 'Roll the Pick!'}</span>
+        <span>
+          {loading
+            ? 'Rolling...'
+            : canPick
+              ? `Roll from ${candidateCount} ${candidateCount === 1 ? 'title' : 'titles'}!`
+              : 'Pick a watchlist first'}
+        </span>
       </button>
 
       {picked && (
-        <div
-          key={picked.imdbId}
-          className="animate-pop-card overflow-hidden rounded-md border-2 border-[#39FF14] bg-[#090118] shadow-[5px_5px_0px_#9D4EDD,0_0_24px_rgba(57,255,20,0.3)]"
-        >
-          <div className="rainbow-ribbon h-2 w-full" />
-          <div className="p-5 space-y-4">
+        <div key={picked.imdbId} className="animate-pop-card rainbow-frame">
+          <div className="rounded-[5px] bg-[#090118] p-5 space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1.5">
                 <div className="inline-flex items-center gap-1.5 rounded border border-[#FF1E8A] bg-[#FF1E8A]/20 px-2.5 py-0.5 text-xs font-bold text-[#FF72B6]">
@@ -60,7 +71,7 @@ export function PickCard({ canPick, loading, picked, hasUser, onPick, onMarkSeen
                 {picked.genres.map((g) => (
                   <span
                     key={g}
-                    className="rounded border border-purple-400/60 bg-[#1B0938] px-2.5 py-0.5 text-xs font-semibold text-purple-100"
+                    className="rounded border border-purple-400/50 bg-[#1B0938] px-2.5 py-0.5 text-xs font-semibold text-purple-100"
                   >
                     {g}
                   </span>
@@ -73,7 +84,7 @@ export function PickCard({ canPick, loading, picked, hasUser, onPick, onMarkSeen
                 href={picked.imdbUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded border-2 border-[#FF7A00] bg-[#14062B] px-4 py-2.5 text-xs font-extrabold text-[#FF9E44] transition hover:bg-[#FF7A00] hover:text-[#090118]"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded border-2 border-purple-400 bg-[#14062B] px-4 py-2.5 text-xs font-extrabold text-purple-100 transition hover:border-[#FF7A00] hover:text-[#FF9E44]"
               >
                 <span>Open IMDb</span>
                 <ExternalLink className="h-3.5 w-3.5" />

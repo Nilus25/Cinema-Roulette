@@ -106,20 +106,20 @@ export function App() {
 
   return (
     <div className="min-h-screen pb-12">
-      <div className="rainbow-ribbon h-2 w-full" />
-
       <div className="mx-auto max-w-3xl px-4 py-6 space-y-5">
         {/* Header */}
-        <header className="neo-panel-purple flex items-center justify-between px-4 py-3.5">
+        <header className="neo-panel flex items-center justify-between px-4 py-3.5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded border-2 border-[#39FF14] bg-[#090118] text-[#39FF14] shadow-[0_0_14px_rgba(57,255,20,0.45)]">
               <Clapperboard className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="font-display text-2xl font-extrabold tracking-tight text-[#39FF14] drop-shadow-[0_0_10px_rgba(57,255,20,0.6)]">
+              <h1 className="font-display text-2xl font-extrabold tracking-tight text-[#39FF14] drop-shadow-[0_0_10px_rgba(57,255,20,0.5)]">
                 IMDBSelector
               </h1>
-              <p className="text-xs font-semibold text-[#FF8DC7]">Zero-scroll watchlist randomizer</p>
+              <p className="text-xs font-semibold text-purple-200/75">
+                Pick something to watch without the endless scroll
+              </p>
             </div>
           </div>
         </header>
@@ -191,7 +191,7 @@ export function App() {
         </div>
 
         {/* Zone 2: Picker Stage */}
-        <section className="neo-panel-purple p-5 space-y-5">
+        <section className="neo-panel-hero p-5 space-y-5">
           <FilterPanel
             metadata={metadata}
             filter={filter}
@@ -202,6 +202,7 @@ export function App() {
 
           <PickCard
             canPick={Boolean(selectedWatchlistId)}
+            candidateCount={items.length}
             loading={picking}
             picked={picked}
             hasUser={Boolean(selectedUserId)}

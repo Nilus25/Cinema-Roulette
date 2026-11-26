@@ -6,9 +6,9 @@
     min-height: 100vh;
     background-color: #090118;
     background-image:
-      radial-gradient(ellipse 75% 45% at 15% 0%, rgba(168, 85, 247, 0.35), transparent),
-      radial-gradient(ellipse 65% 45% at 88% 10%, rgba(255, 30, 138, 0.25), transparent),
-      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(57, 255, 20, 0.14), transparent);
+      radial-gradient(ellipse 75% 45% at 20% 0%, rgba(139, 92, 246, 0.32), transparent),
+      radial-gradient(ellipse 65% 45% at 85% 15%, rgba(255, 30, 138, 0.18), transparent),
+      radial-gradient(ellipse 55% 35% at 50% 100%, rgba(57, 255, 20, 0.1), transparent);
     background-attachment: fixed;
   }
 
@@ -17,36 +17,37 @@
   }
 }
 
-.rainbow-ribbon {
+/* Unified structural container: calm royal purple so Neon Green CTA & Pink/Orange highlights pop */
+.neo-panel {
+  background: #14062B;
+  border: 2px solid #6D28D9;
+  border-radius: 6px;
+  box-shadow: 4px 4px 0px #3B0764;
+}
+
+.neo-panel-hero {
+  background: #14062B;
+  border: 2px solid #9333EA;
+  border-radius: 8px;
+  box-shadow:
+    6px 6px 0px #581C87,
+    0 0 28px rgba(147, 51, 234, 0.28);
+}
+
+/* Playful animated rainbow border for the revealed Pick card */
+@keyframes rainbow-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.rainbow-frame {
   background: linear-gradient(90deg, #FF1E56, #FF7A00, #FFE600, #39FF14, #00E5FF, #9D4EDD, #FF1E8A);
-}
-
-/* Neo-Brutalist 90s Neon Panel: crisp 6px corners, glowing border + hard offset shadow */
-.neo-panel-purple {
-  background: #14062B;
-  border: 2px solid #B5179E;
-  border-radius: 6px;
-  box-shadow:
-    5px 5px 0px #7B2CBF,
-    0 0 22px rgba(181, 23, 158, 0.35);
-}
-
-.neo-panel-green {
-  background: #14062B;
-  border: 2px solid #39FF14;
-  border-radius: 6px;
-  box-shadow:
-    5px 5px 0px #16A34A,
-    0 0 18px rgba(57, 255, 20, 0.28);
-}
-
-.neo-panel-pink {
-  background: #14062B;
-  border: 2px solid #FF1E8A;
-  border-radius: 6px;
-  box-shadow:
-    5px 5px 0px #FF7A00,
-    0 0 18px rgba(255, 30, 138, 0.3);
+  background-size: 250% 250%;
+  animation: rainbow-shift 4s ease infinite;
+  padding: 3px;
+  border-radius: 8px;
+  box-shadow: 6px 6px 0px #581C87, 0 0 24px rgba(57, 255, 20, 0.25);
 }
 
 .neo-btn-primary {
@@ -56,7 +57,7 @@
   border-radius: 6px;
   box-shadow:
     5px 5px 0px #FF1E8A,
-    0 0 24px rgba(57, 255, 20, 0.65);
+    0 0 24px rgba(57, 255, 20, 0.6);
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 

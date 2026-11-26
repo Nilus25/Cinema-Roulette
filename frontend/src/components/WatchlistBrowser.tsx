@@ -10,10 +10,10 @@ interface WatchlistBrowserProps {
 
 export function WatchlistBrowser({ items, hasUser, loading, onToggleSeen }: WatchlistBrowserProps) {
   return (
-    <section className="neo-panel-purple p-4 space-y-3">
+    <section className="neo-panel p-4 space-y-3">
       <div className="flex items-center justify-between border-b-2 border-purple-500/40 pb-2.5">
         <div className="flex items-center gap-2 font-display text-sm font-bold text-purple-200">
-          <ListVideo className="h-4 w-4 text-[#FF1E8A]" />
+          <ListVideo className="h-4 w-4 text-purple-400" />
           <span>Watchlist Vault</span>
           <span className="rounded bg-[#39FF14] px-2 py-0.5 text-xs font-extrabold text-[#090118]">
             {items.length}
@@ -48,7 +48,7 @@ export function WatchlistBrowser({ items, hasUser, loading, onToggleSeen }: Watc
                       {item.rating}
                     </span>
                   )}
-                  <span className="text-[#FF5CA8]">{item.mediaType}</span>
+                  <span className="text-[#FF72B6]">{item.mediaType}</span>
                   {item.director && <span className="truncate">{item.director}</span>}
                 </div>
               </div>
