@@ -1,31 +1,63 @@
 # IMDBSelector
 
-## Description
-IMDBSelector is an application for the management of IMDB movies.
-It allows the user to create profiles which contain information of the multimedia that has seen from different watchlists that have to be imported from IMDB.
-The user can view the movies they have and haven't seen from a concrete watchlist, while adding or deleting seen movies from their profiles.
-These watchlist can be filtered by genre, rating, year, type(i.e. movie or TV show) or by keywords, like the title or the director contains X word.
-The main attraction of this application is the selection of a random movie given the filters for the user to watch, also storing the last generated in case the user logs in after watching it, to be added to seen movies.
-There are two modes for the selection, a full random one from the watchlist, or a not seen one, which will only select from the movies of the watchlist that the user hasn't seen yet.
-## Motivation
-The motivation behind this project was the need to have a tool that could help me decide what to watch when I was bored,
-because my watchlist has become quite extensive and I spent more time deciding what to watch than actually watching something.
-As I am currently on vacations and I have some free time I was in a hurry to make this tool, thus explaining why it isn't commented at all (even though I think the code is pretty self-explanatory).
-I have some ideas for the future as would be to add different languages, specifically catalan and spanish. The option to not open URLs in case there is no internet connection.
-To add a mode for the filters to be inclusive or exclusive (now is exclusive on the different parameters but inclusive internally on genres and types).
-To add data extraction from Rotten Tomatoes, the images from IMDB and Justwatch information.
-And finally some watchlist operations like the union and intersection of watchlist.
+A personal movie and TV show watchlist manager and random-pick web application built around IMDb CSV exports.
 
+## Overview
 
-## Requirements
-- Java 11 (Amazon Corretto 11 recommended)
+IMDBSelector solves decision fatigue when your watchlist grows too large:
+- **User Profiles**: Create, load, and delete viewer profiles, each tracking seen titles and the last randomly picked title.
+- **IMDb CSV Watchlists**: Import and update watchlists from standard IMDb CSV exports (header-mapped and resilient to missing ratings/years).
+- **Filtering**: Filter by rating range (`0.0`–`10.0`), release year range, genres, media types, title/director keywords, and **Not-Seen-Only** mode.
+- **Random Pick**: Select a random matching title, view its details, open its IMDb page, and mark it as seen.
 
-## Installation
-1. Just download the folder.
+---
 
-## Usage
-Run the JAR file using the following command:
+## Tech Stack & Architecture
+
+- **Backend (`backend/`)**: **Java 25**, **Javalin**, **jOOQ** (compile-time SQL codegen from Flyway migrations), **Flyway**, **PostgreSQL**, **OpenCSV**, **Gradle (Kotlin DSL)**.
+  - Structured with **Hexagonal Architecture (Ports & Adapters)** and **DDD** (pure `domain` enforced by **ArchUnit**, `application` use cases & ports, `infrastructure` adapters wired manually in `AppAssembler`).
+  - **RFC 9457 Problem Details** error responses and `X-Trace-Id` request correlation/timing logs.
+- **Frontend (`frontend/`)**: **React**, **TypeScript**, **Vite**, **Tailwind CSS** (mobile-first responsive SPA).
+- **Infrastructure**: **Docker Compose** (PostgreSQL 17) and multi-stage **Dockerfile** for the backend.
+
+See [documentation/target-architecture.md](documentation/target-architecture.md) and [documentation/roadmap.md](documentation/roadmap.md) for architecture diagrams and upcoming features.
+
+---
+
+## Running Locally
+
+### Prerequisites
+- **Docker** (for PostgreSQL)
+- **Java 25** (or Java 11+ with Gradle toolchain auto-provisioning)
+- **Node.js 20+**
+
+### 1. Start PostgreSQL
 ```sh
-java -jar path/to/IMDBSelector.jar
+docker compose up -d
 ```
-Executable (Windows): Use the executable file.
+
+### 2. Start the Backend (port `8080`)
+```sh
+./backend/gradlew -p backend run
+```
+
+### 3. Start the Frontend (port `5173`)
+```sh
+cd frontend
+npm install
+npm run dev
+```
+
+### Optional: Migrate Legacy JSON Data
+If you have legacy `*_user.json` and `*_watchlist.json` files under `data/`:
+```sh
+./backend/gradlew -p backend run -PmainClass=com.imdbselector.infrastructure.adapter.in.cli.LegacyJsonMigrator
+```
+
+---
+
+## Running Tests
+```sh
+./backend/gradlew -p backend test
+cd frontend && npm run build
+```
