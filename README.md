@@ -20,9 +20,7 @@ IMDBSelector started as a quick Java 11 Swing desktop app with local JSON files.
 ```text
 ├── backend/            # Java 25, Javalin, jOOQ, Flyway, PostgreSQL (Hexagonal + DDD)
 ├── frontend/           # React, TypeScript, Vite, Tailwind CSS
-├── documentation/      # Architecture diagrams (Mermaid) & roadmap
-├── docker-compose.yml  # Local PostgreSQL 17 setup
-└── GEMINI.md           # Project context & collaboration rules
+└── docker-compose.yml  # Local PostgreSQL 17 setup
 ```
 
 ## Getting Started
