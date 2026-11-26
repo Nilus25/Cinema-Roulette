@@ -152,18 +152,18 @@ export function App() {
   }, [selectedWatchlistId, items]);
 
   return (
-    <div className="min-h-screen bg-black">
-      <div className="neon-stage-bg min-h-screen mx-auto max-w-[1440px] border-x-2 border-[#B5179E]/35 px-4 sm:px-6 py-6 pb-12 space-y-4">
+    <div className="min-h-screen pb-12">
+      <div className="mx-auto max-w-[1680px] px-4 sm:px-6 lg:px-8 py-6 space-y-4">
         {error && (
           <div className="rounded border-2 border-[#FF2E54] bg-[#290510] px-4 py-3 text-xs font-bold text-rose-200 shadow-[4px_4px_0px_#FF2E54]">
             {error}
           </div>
         )}
 
-        {/* 3-Column Uneven Desktop Layout matching sketch */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* Left Column: Profile + Stats (3 cols) */}
-          <aside className="order-2 lg:order-1 lg:col-span-3">
+        {/* 3-Column Uneven Desktop Layout with wide 1fr center */}
+        <div className="grid grid-cols-1 lg:grid-cols-[270px_1fr_310px] gap-6 items-start">
+          {/* Left Column: Profile + Stats */}
+          <aside className="order-2 lg:order-1">
             <ProfileBar
               users={users}
               selectedUserId={selectedUserId}
@@ -196,8 +196,8 @@ export function App() {
             />
           </aside>
 
-          {/* Center Column: Unified Title + Filters + Picker Stage (6 cols) with 35mm lateral rails */}
-          <main className="order-1 lg:order-2 lg:col-span-6">
+          {/* Center Column: Unified Title + Filters + Picker Stage (1fr wide) */}
+          <main className="order-1 lg:order-2 min-w-0">
             <section className="neo-panel-purple flex overflow-hidden">
               <div className="filmstrip-rail hidden sm:block border-r-2 border-[#B5179E]/45" />
               <div className="flex-1 min-w-0">
@@ -257,8 +257,8 @@ export function App() {
             </section>
           </main>
 
-          {/* Right Column: Watchlist + Stats + Vault (3 cols) */}
-          <aside className="order-3 lg:col-span-3 space-y-4">
+          {/* Right Column: Watchlist + Stats + Vault */}
+          <aside className="order-3 space-y-4">
             <WatchlistBar
               watchlists={watchlists}
               selectedWatchlistId={selectedWatchlistId}
