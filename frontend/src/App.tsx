@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { Clapperboard } from 'lucide-react';
 import { api } from './api/client';
@@ -11,6 +11,7 @@ import type {
   FilterMetadata,
   FilterState,
   MediaItemResponse,
+  UserDetailsResponse,
   UserResponse,
   WatchlistItemResponse,
   WatchlistResponse,
@@ -36,6 +37,24 @@ function fireRainbowConfetti() {
   });
 }
 
+function mostFrequentGenre(items: MediaItemResponse[]): string | null {
+  const counts = new Map<string, number>();
+  for (const item of items) {
+    for (const g of item.genres) {
+      counts.set(g, (counts.get(g) ?? 0) + 1);
+    }
+  }
+  let top: string | null = null;
+  let max = 0;
+  for (const [genre, count] of counts) {
+    if (count > max) {
+      max = count;
+      top = genre;
+    }
+  }
+  return top;
+}
+
 export function App() {
   const [metadata, setMetadata] = useState<FilterMetadata | null>(null);
   const [users, setUsers] = useState<UserResponse[]>([]);
@@ -44,6 +63,7 @@ export function App() {
   const [selectedWatchlistId, setSelectedWatchlistId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterState>(EMPTY_FILTER);
 
+  const [userDetails, setUserDetails] = useState<UserDetailsResponse | null>(null);
   const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState<MediaItemResponse | null>(null);
   const [picked, setPicked] = useState<MediaItemResponse | null>(null);
   const [items, setItems] = useState<WatchlistItemResponse[]>([]);
@@ -57,6 +77,17 @@ export function App() {
     setWatchlists(w);
   }, []);
 
+  const refreshUserDetails = useCallback(async (userId: string | null) => {
+    if (!userId) {
+      setUserDetails(null);
+      setLastGeneratedPrompt(null);
+      return;
+    }
+    const details = await api.getUserDetails(userId);
+    setUserDetails(details);
+    setLastGeneratedPrompt(details.unseenLastGeneratedPrompt);
+  }, []);
+
   useEffect(() => {
     Promise.all([api.getFilterMetadata(), refreshLists()])
       .then(([meta]) => setMetadata(meta))
@@ -64,15 +95,8 @@ export function App() {
   }, [refreshLists]);
 
   useEffect(() => {
-    if (!selectedUserId) {
-      setLastGeneratedPrompt(null);
-      return;
-    }
-    api
-      .getUserDetails(selectedUserId)
-      .then((details) => setLastGeneratedPrompt(details.unseenLastGeneratedPrompt))
-      .catch((e) => setError(e.message));
-  }, [selectedUserId]);
+    refreshUserDetails(selectedUserId).catch((e) => setError(e.message));
+  }, [selectedUserId, refreshUserDetails]);
 
   const loadItems = useCallback(async () => {
     if (!selectedWatchlistId) {
@@ -104,37 +128,91 @@ export function App() {
     }
   };
 
+  const profileStats = useMemo(() => {
+    if (!userDetails) return null;
+    const seenInWatchlist = items.filter((i) => i.seen).length;
+    return {
+      totalSeen: userDetails.seenItems.length,
+      seenInWatchlist,
+      watchlistTotal: items.length,
+      topGenre: mostFrequentGenre(userDetails.seenItems),
+    };
+  }, [userDetails, items]);
+
+  const watchlistStats = useMemo(() => {
+    if (!selectedWatchlistId) return null;
+    const rated = items.map((i) => i.item.rating).filter((r): r is number => r !== null);
+    const avg = rated.length > 0 ? (rated.reduce((a, b) => a + b, 0) / rated.length).toFixed(1) : null;
+    return {
+      total: items.length,
+      unseenCount: items.filter((i) => !i.seen).length,
+      avgRating: avg,
+      topGenre: mostFrequentGenre(items.map((i) => i.item)),
+    };
+  }, [selectedWatchlistId, items]);
+
   return (
     <div className="min-h-screen pb-12">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 space-y-6">
-        {/* Header */}
-        <header className="neo-panel-purple flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <div className="flex items-center gap-3.5">
-            <div className="flex h-11 w-11 items-center justify-center rounded border-2 border-[#39FF14] bg-[#090118] text-[#39FF14] shadow-[0_0_16px_rgba(57,255,20,0.5)]">
-              <Clapperboard className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-[#39FF14] drop-shadow-[0_0_12px_rgba(57,255,20,0.55)]">
-                IMDBSelector
-              </h1>
-              <p className="text-xs font-semibold text-[#FF8DC7]">
-                Pick something to watch without the endless scroll
-              </p>
-            </div>
-          </div>
-        </header>
-
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 space-y-4">
         {error && (
           <div className="rounded border-2 border-[#FF2E54] bg-[#290510] px-4 py-3 text-xs font-bold text-rose-200 shadow-[4px_4px_0px_#FF2E54]">
             {error}
           </div>
         )}
 
-        {/* Asymmetric 2-Pane Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Main Stage (7 cols) */}
-          <main className="lg:col-span-7 space-y-6">
-            <section className="neo-panel-purple p-5 sm:p-6 space-y-5">
+        {/* 3-Column Uneven Desktop Layout matching sketch */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          {/* Left Column: Profile + Stats (3 cols) */}
+          <aside className="order-2 lg:order-1 lg:col-span-3">
+            <ProfileBar
+              users={users}
+              selectedUserId={selectedUserId}
+              onSelectUser={setSelectedUserId}
+              onCreateUser={(name) =>
+                runAction(async () => {
+                  const created = await api.createUser(name);
+                  await refreshLists();
+                  setSelectedUserId(created.id);
+                })
+              }
+              onDeleteUser={(id) =>
+                runAction(async () => {
+                  await api.deleteUser(id);
+                  setSelectedUserId(null);
+                  await refreshLists();
+                })
+              }
+              lastGeneratedPrompt={lastGeneratedPrompt}
+              onMarkLastSeen={(imdbId) =>
+                runAction(async () => {
+                  if (!selectedUserId) return;
+                  await api.markSeen(selectedUserId, imdbId);
+                  setLastGeneratedPrompt(null);
+                  await Promise.all([refreshLists(), refreshUserDetails(selectedUserId), loadItems()]);
+                })
+              }
+              onDismissPrompt={() => setLastGeneratedPrompt(null)}
+              stats={profileStats}
+            />
+          </aside>
+
+          {/* Center Column: Title Header + Filters + Picker Stage (5 cols) */}
+          <main className="order-1 lg:order-2 lg:col-span-5 space-y-4">
+            <header className="neo-panel-purple flex items-center gap-3.5 px-5 py-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded border-2 border-[#39FF14] bg-[#090118] text-[#39FF14] shadow-[0_0_16px_rgba(57,255,20,0.5)]">
+                <Clapperboard className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-[#39FF14] drop-shadow-[0_0_12px_rgba(57,255,20,0.55)]">
+                  IMDBSelector
+                </h1>
+                <p className="text-xs font-semibold text-[#FF8DC7]">
+                  Pick something to watch without the endless scroll
+                </p>
+              </div>
+            </header>
+
+            <section className="neo-panel-purple p-5 space-y-5">
               <FilterPanel
                 metadata={metadata}
                 filter={filter}
@@ -166,45 +244,15 @@ export function App() {
                   runAction(async () => {
                     if (!selectedUserId) return;
                     await api.markSeen(selectedUserId, imdbId);
-                    await Promise.all([refreshLists(), loadItems()]);
+                    await Promise.all([refreshLists(), refreshUserDetails(selectedUserId), loadItems()]);
                   })
                 }
               />
             </section>
           </main>
 
-          {/* Side Controls & Vault (5 cols) */}
-          <aside className="lg:col-span-5 space-y-5">
-            <ProfileBar
-              users={users}
-              selectedUserId={selectedUserId}
-              onSelectUser={setSelectedUserId}
-              onCreateUser={(name) =>
-                runAction(async () => {
-                  const created = await api.createUser(name);
-                  await refreshLists();
-                  setSelectedUserId(created.id);
-                })
-              }
-              onDeleteUser={(id) =>
-                runAction(async () => {
-                  await api.deleteUser(id);
-                  setSelectedUserId(null);
-                  await refreshLists();
-                })
-              }
-              lastGeneratedPrompt={lastGeneratedPrompt}
-              onMarkLastSeen={(imdbId) =>
-                runAction(async () => {
-                  if (!selectedUserId) return;
-                  await api.markSeen(selectedUserId, imdbId);
-                  setLastGeneratedPrompt(null);
-                  await Promise.all([refreshLists(), loadItems()]);
-                })
-              }
-              onDismissPrompt={() => setLastGeneratedPrompt(null)}
-            />
-
+          {/* Right Column: Watchlist + Stats + Vault (4 cols) */}
+          <aside className="order-3 lg:col-span-4 space-y-4">
             <WatchlistBar
               watchlists={watchlists}
               selectedWatchlistId={selectedWatchlistId}
@@ -230,6 +278,7 @@ export function App() {
                   await refreshLists();
                 })
               }
+              stats={watchlistStats}
             />
 
             {selectedWatchlistId && (
@@ -245,7 +294,7 @@ export function App() {
                     } else {
                       await api.markSeen(selectedUserId, imdbId);
                     }
-                    await Promise.all([refreshLists(), loadItems()]);
+                    await Promise.all([refreshLists(), refreshUserDetails(selectedUserId), loadItems()]);
                   })
                 }
               />
