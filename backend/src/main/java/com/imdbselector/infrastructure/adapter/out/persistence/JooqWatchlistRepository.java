@@ -9,6 +9,7 @@ import com.imdbselector.domain.valueobject.WatchlistVisibility;
 import com.imdbselector.infrastructure.jooq.tables.records.WatchlistsRecord;
 import org.jooq.DSLContext;
 
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
@@ -123,8 +124,8 @@ public final class JooqWatchlistRepository implements WatchlistRepository {
     public Watchlist save(Watchlist watchlist) {
         dsl.transaction(cfg -> {
             DSLContext tx = cfg.dsl();
-            var created = watchlist.createdAt().atOffset(ZoneOffset.UTC);
-            var updated = watchlist.updatedAt().atOffset(ZoneOffset.UTC);
+            OffsetDateTime created = watchlist.createdAt().atOffset(ZoneOffset.UTC);
+            OffsetDateTime updated = watchlist.updatedAt().atOffset(ZoneOffset.UTC);
             UUID ownerUuid = watchlist.ownerUserId() == null ? null : watchlist.ownerUserId().value();
 
             tx.insertInto(WATCHLISTS)
@@ -161,6 +162,9 @@ public final class JooqWatchlistRepository implements WatchlistRepository {
 
     @Override
     public void deleteById(WatchlistId id) {
+        dsl.deleteFrom(WATCHLIST_ITEMS)
+                .where(WATCHLIST_ITEMS.WATCHLIST_ID.eq(id.value()))
+                .execute();
         dsl.deleteFrom(WATCHLISTS)
                 .where(WATCHLISTS.ID.eq(id.value()))
                 .execute();

@@ -54,4 +54,18 @@ public final class JooqWatchlistSubscriptionRepository implements WatchlistSubsc
                 .where(WATCHLIST_SUBSCRIPTIONS.USER_ID.eq(userId.value()))
                 .fetch(r -> new WatchlistId(r.value1()));
     }
+
+    @Override
+    public void deleteByWatchlistId(WatchlistId watchlistId) {
+        dsl.deleteFrom(WATCHLIST_SUBSCRIPTIONS)
+                .where(WATCHLIST_SUBSCRIPTIONS.WATCHLIST_ID.eq(watchlistId.value()))
+                .execute();
+    }
+
+    @Override
+    public void deleteByUserId(UserId userId) {
+        dsl.deleteFrom(WATCHLIST_SUBSCRIPTIONS)
+                .where(WATCHLIST_SUBSCRIPTIONS.USER_ID.eq(userId.value()))
+                .execute();
+    }
 }

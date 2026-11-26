@@ -9,7 +9,7 @@ class ImdbIdTest {
 
     @Test
     void acceptsValidImdbId() {
-        var id = new ImdbId(" tt0111161 ");
+        ImdbId id = new ImdbId(" tt0111161 ");
         assertThat(id.value()).isEqualTo("tt0111161");
     }
 

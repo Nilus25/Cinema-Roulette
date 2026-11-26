@@ -77,7 +77,18 @@ tasks.compileJava {
 }
 
 application {
-    mainClass.set("com.imdbselector.infrastructure.adapter.in.http.AppServer")
+    mainClass.set(
+        providers.gradleProperty("mainClass")
+            .orElse("com.imdbselector.infrastructure.adapter.in.http.AppServer")
+    )
+}
+
+tasks.register<JavaExec>("migrateLegacy") {
+    group = "application"
+    description = "Migrates legacy JSON user and watchlist files into PostgreSQL"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("com.imdbselector.infrastructure.adapter.in.cli.LegacyJsonMigrator")
+    javaLauncher.set(javaToolchains.launcherFor(java.toolchain))
 }
 
 tasks.test {

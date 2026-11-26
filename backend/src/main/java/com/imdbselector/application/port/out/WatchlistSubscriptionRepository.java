@@ -13,4 +13,8 @@ public interface WatchlistSubscriptionRepository {
     boolean isSubscribed(UserId userId, WatchlistId watchlistId);
 
     List<WatchlistId> findSubscribedWatchlistIds(UserId userId);
+
+    void deleteByWatchlistId(WatchlistId watchlistId);
+
+    void deleteByUserId(UserId userId);
 }

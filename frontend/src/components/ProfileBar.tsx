@@ -1,4 +1,4 @@
-import { Check, LogOut, Sparkles, User } from 'lucide-react';
+import { Check, Clapperboard, LogOut, Popcorn, Sparkles } from 'lucide-react';
 import type { MediaItemResponse } from '../types/api';
 
 interface ProfileStats {
@@ -12,6 +12,7 @@ interface ProfileBarProps {
   username: string;
   onLogout: () => Promise<void>;
   lastGeneratedPrompt: MediaItemResponse | null;
+  recentSeen: MediaItemResponse[];
   onMarkLastSeen: (imdbId: string) => Promise<void>;
   onDismissPrompt: () => void;
   stats: ProfileStats;
@@ -21,6 +22,7 @@ export function ProfileBar({
   username,
   onLogout,
   lastGeneratedPrompt,
+  recentSeen,
   onMarkLastSeen,
   onDismissPrompt,
   stats,
@@ -33,7 +35,7 @@ export function ProfileBar({
       <div className="neo-panel-green p-4 space-y-3">
         <div className="flex items-center justify-between gap-2 border-b border-[#39FF14]/30 pb-2">
           <div className="flex items-center gap-2 font-display text-sm font-bold text-[#39FF14] min-w-0">
-            <User className="h-4 w-4 shrink-0" />
+            <Popcorn className="h-4 w-4 shrink-0 text-[#39FF14]" />
             <span className="truncate">{username}</span>
           </div>
           <button
@@ -77,6 +79,31 @@ export function ProfileBar({
               </div>
             </div>
           )}
+
+          {recentSeen.length > 0 && (
+            <div className="border-t border-[#39FF14]/25 pt-2 space-y-1.5">
+              <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-green-300/75">
+                <Clapperboard className="h-3 w-3 text-[#39FF14]" />
+                <span>Recently Screened</span>
+              </div>
+              <div className="space-y-1">
+                {recentSeen.map((item) => (
+                  <a
+                    key={item.imdbId}
+                    href={item.imdbUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between gap-2 rounded border border-[#39FF14]/25 bg-[#090118]/80 px-2 py-1 text-[11px] font-semibold text-green-100 transition hover:border-[#39FF14] hover:text-[#39FF14]"
+                  >
+                    <span className="truncate">{item.title}</span>
+                    <span className="shrink-0 font-mono text-[10px] text-green-300/70">
+                      {item.releaseYear ?? '—'}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -85,7 +112,7 @@ export function ProfileBar({
           <div className="flex items-start gap-2">
             <Sparkles className="h-4 w-4 shrink-0 text-[#FFE600] mt-0.5" />
             <span>
-              Last spun: <strong className="text-[#39FF14]">{lastGeneratedPrompt.title}</strong>
+              From your last session: <strong className="text-[#39FF14]">{lastGeneratedPrompt.title}</strong>
               {lastGeneratedPrompt.releaseYear ? ` (${lastGeneratedPrompt.releaseYear})` : ''}. Watched it?
             </span>
           </div>

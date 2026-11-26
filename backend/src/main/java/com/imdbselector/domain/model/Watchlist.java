@@ -1,16 +1,21 @@
 package com.imdbselector.domain.model;
 
+import com.imdbselector.domain.valueobject.FilterCriteria;
 import com.imdbselector.domain.valueobject.ImdbId;
 import com.imdbselector.domain.valueobject.UserId;
+import com.imdbselector.domain.valueobject.WatchlistDiff;
 import com.imdbselector.domain.valueobject.WatchlistId;
 import com.imdbselector.domain.valueobject.WatchlistVisibility;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Aggregate root representing a named collection of MediaItem references owned by a User.
@@ -85,6 +90,39 @@ public final class Watchlist {
         this.visibility = Objects.requireNonNull(newVisibility, "visibility must not be null");
         this.shareCode = newShareCode;
         this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt must not be null");
+    }
+
+    public WatchlistDiff diffAgainst(List<MediaItem> currentItems, List<MediaItem> incomingItems) {
+        Set<ImdbId> currentIds = new LinkedHashSet<>(this.mediaItemIds);
+        Map<ImdbId, MediaItem> incomingById = new LinkedHashMap<>();
+        if (incomingItems != null) {
+            for (MediaItem item : incomingItems) {
+                incomingById.putIfAbsent(item.imdbId(), item);
+            }
+        }
+
+        List<MediaItem> added = incomingById.values().stream()
+                .filter(item -> !currentIds.contains(item.imdbId()))
+                .toList();
+
+        List<MediaItem> removed = (currentItems == null ? List.<MediaItem>of() : currentItems).stream()
+                .filter(item -> !incomingById.containsKey(item.imdbId()))
+                .toList();
+
+        return new WatchlistDiff(added, removed);
+    }
+
+    /**
+     * Filters the given catalog items belonging to this watchlist according to FilterCriteria.
+     */
+    public static List<MediaItem> filterItems(List<MediaItem> items, FilterCriteria criteria) {
+        if (items == null || items.isEmpty()) {
+            return List.of();
+        }
+        FilterCriteria effective = criteria == null ? FilterCriteria.unfiltered() : criteria;
+        return items.stream()
+                .filter(item -> item.matches(effective))
+                .toList();
     }
 
     private static List<ImdbId> deduplicate(List<ImdbId> ids) {

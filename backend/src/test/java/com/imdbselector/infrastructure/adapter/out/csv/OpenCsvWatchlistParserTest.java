@@ -1,5 +1,6 @@
 package com.imdbselector.infrastructure.adapter.out.csv;
 
+import com.imdbselector.domain.model.MediaItem;
 import com.imdbselector.domain.valueobject.Genre;
 import com.imdbselector.domain.valueobject.ImdbId;
 import com.imdbselector.domain.valueobject.MediaType;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,8 +23,8 @@ class OpenCsvWatchlistParserTest {
                 2,tt9999999,2024-01-01,2024-01-01,,Upcoming Short,https://www.imdb.com/title/tt9999999/,Short,,,,Drama,,,""
                 """;
 
-        var parser = new OpenCsvWatchlistParser();
-        var items = parser.parse(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)));
+        OpenCsvWatchlistParser parser = new OpenCsvWatchlistParser();
+        List<MediaItem> items = parser.parse(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)));
 
         assertThat(items).hasSize(2);
         assertThat(items.get(0).imdbId()).isEqualTo(new ImdbId("tt0111161"));

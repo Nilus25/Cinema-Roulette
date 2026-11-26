@@ -1,7 +1,10 @@
 package com.imdbselector.infrastructure.adapter.in.http;
 
-import com.imdbselector.application.usecase.AuthService;
-import com.imdbselector.application.usecase.UserService;
+import com.imdbselector.application.usecase.auth.AuthSession;
+import com.imdbselector.application.usecase.auth.AuthenticateTokenUseCase;
+import com.imdbselector.application.usecase.auth.LoginUserUseCase;
+import com.imdbselector.application.usecase.auth.RegisterUserUseCase;
+import com.imdbselector.application.usecase.user.GetUserDetailsUseCase;
 import com.imdbselector.domain.valueobject.UserId;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -15,27 +18,48 @@ public final class AuthController {
     public static final String AUTH_USER_ATTR = "authUserId";
     private static final int COOKIE_MAX_AGE_SECONDS = (int) Duration.ofDays(14).toSeconds();
 
-    private final AuthService authService;
-    private final UserService userService;
+    private final RegisterUserUseCase registerUser;
+    private final LoginUserUseCase loginUser;
+    private final AuthenticateTokenUseCase authenticateToken;
+    private final GetUserDetailsUseCase getUserDetails;
+    private final boolean cookieSecure;
 
-    public AuthController(AuthService authService, UserService userService) {
-        this.authService = authService;
-        this.userService = userService;
+    public AuthController(
+            RegisterUserUseCase registerUser,
+            LoginUserUseCase loginUser,
+            AuthenticateTokenUseCase authenticateToken,
+            GetUserDetailsUseCase getUserDetails
+    ) {
+        this(registerUser, loginUser, authenticateToken, getUserDetails, false);
+    }
+
+    public AuthController(
+            RegisterUserUseCase registerUser,
+            LoginUserUseCase loginUser,
+            AuthenticateTokenUseCase authenticateToken,
+            GetUserDetailsUseCase getUserDetails,
+            boolean cookieSecure
+    ) {
+        this.registerUser = registerUser;
+        this.loginUser = loginUser;
+        this.authenticateToken = authenticateToken;
+        this.getUserDetails = getUserDetails;
+        this.cookieSecure = cookieSecure;
     }
 
     public void registerRoutes(Javalin app) {
         app.post("/api/auth/register", ctx -> {
-            var req = ctx.bodyAsClass(ApiDtos.AuthRequest.class);
-            var session = authService.register(req.username(), req.password());
+            ApiDtos.AuthRequest req = ctx.bodyAsClass(ApiDtos.AuthRequest.class);
+            AuthSession session = registerUser.execute(req.username(), req.password());
             setAuthCookie(ctx, session.token());
-            ctx.status(201).json(ApiDtos.UserDetailsResponse.from(userService.getUserDetails(session.user().id())));
+            ctx.status(201).json(ApiDtos.UserDetailsResponse.from(getUserDetails.execute(session.user().id())));
         });
 
         app.post("/api/auth/login", ctx -> {
-            var req = ctx.bodyAsClass(ApiDtos.AuthRequest.class);
-            var session = authService.login(req.username(), req.password());
+            ApiDtos.AuthRequest req = ctx.bodyAsClass(ApiDtos.AuthRequest.class);
+            AuthSession session = loginUser.execute(req.username(), req.password());
             setAuthCookie(ctx, session.token());
-            ctx.json(ApiDtos.UserDetailsResponse.from(userService.getUserDetails(session.user().id())));
+            ctx.json(ApiDtos.UserDetailsResponse.from(getUserDetails.execute(session.user().id())));
         });
 
         app.post("/api/auth/logout", ctx -> {
@@ -45,7 +69,7 @@ public final class AuthController {
 
         app.get("/api/auth/me", ctx -> {
             UserId userId = requireAuthenticatedUser(ctx);
-            ctx.json(ApiDtos.UserDetailsResponse.from(userService.getUserDetails(userId)));
+            ctx.json(ApiDtos.UserDetailsResponse.from(getUserDetails.execute(userId)));
         });
     }
 
@@ -61,13 +85,13 @@ public final class AuthController {
                 token = header.substring("Bearer ".length()).trim();
             }
         }
-        UserId userId = authService.authenticateToken(token);
+        UserId userId = authenticateToken.execute(token);
         ctx.attribute(AUTH_USER_ATTR, userId);
         return userId;
     }
 
-    private static void setAuthCookie(Context ctx, String token) {
-        Cookie cookie = new Cookie(AUTH_COOKIE, token, "/", COOKIE_MAX_AGE_SECONDS, false, 0, true);
+    private void setAuthCookie(Context ctx, String token) {
+        Cookie cookie = new Cookie(AUTH_COOKIE, token, "/", COOKIE_MAX_AGE_SECONDS, cookieSecure, 0, true);
         cookie.setSameSite(SameSite.LAX);
         ctx.cookie(cookie);
     }

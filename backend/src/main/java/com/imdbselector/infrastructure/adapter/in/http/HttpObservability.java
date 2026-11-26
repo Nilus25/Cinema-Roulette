@@ -64,7 +64,7 @@ public final class HttpObservability {
         });
 
         app.exception(IllegalArgumentException.class, (e, ctx) -> {
-            var problem = problem(400, "Bad Request", "BAD_REQUEST", e.getMessage(), traceIdOf(ctx));
+            ApiDtos.ProblemDetail problem = problem(400, "Bad Request", "BAD_REQUEST", e.getMessage(), traceIdOf(ctx));
             ctx.status(400)
                     .contentType("application/problem+json")
                     .json(problem);
@@ -73,7 +73,7 @@ public final class HttpObservability {
         app.exception(Exception.class, (e, ctx) -> {
             String traceId = traceIdOf(ctx);
             log.error("Unhandled technical error on {} {} [traceId={}]", ctx.method(), ctx.path(), traceId, e);
-            var problem = problem(
+            ApiDtos.ProblemDetail problem = problem(
                     500,
                     "Internal Server Error",
                     "INTERNAL_ERROR",

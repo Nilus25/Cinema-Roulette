@@ -1,11 +1,9 @@
-package com.imdbselector.domain.service;
-
-import com.imdbselector.domain.valueobject.ImdbId;
+package com.imdbselector.domain.valueobject;
 
 import java.util.Set;
 
 /**
- * Strategy for narrowing candidate MediaItems prior to random selection.
+ * Strategy for narrowing candidate MediaItems prior to roulette selection.
  */
 public sealed interface SelectionMode permits SelectionMode.Random, SelectionMode.NotSeen {
 

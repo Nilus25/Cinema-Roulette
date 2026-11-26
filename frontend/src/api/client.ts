@@ -6,6 +6,8 @@ import type {
   UserResponse,
   WatchlistItemResponse,
   WatchlistResponse,
+  WatchlistUpdateApplyOptions,
+  WatchlistUpdatePreviewResponse,
   WatchlistVisibility,
 } from '../types/api';
 
@@ -81,9 +83,26 @@ export const api = {
     form.append('file', file);
     return request<WatchlistResponse>('/api/watchlists', { method: 'POST', body: form });
   },
-  updateWatchlistCsv: (watchlistId: string, file: File) => {
+  previewWatchlistCsv: (watchlistId: string, file: File) => {
     const form = new FormData();
     form.append('file', file);
+    return request<WatchlistUpdatePreviewResponse>(`/api/watchlists/${watchlistId}/import/preview`, {
+      method: 'POST',
+      body: form,
+    });
+  },
+  updateWatchlistCsv: (watchlistId: string, file: File, options?: WatchlistUpdateApplyOptions) => {
+    const form = new FormData();
+    form.append('file', file);
+    if (options?.excludeAddedIds.length) {
+      form.append('excludeAddedIds', options.excludeAddedIds.join(','));
+    }
+    if (options?.keepRemovedIds.length) {
+      form.append('keepRemovedIds', options.keepRemovedIds.join(','));
+    }
+    if (options?.markSeenIds.length) {
+      form.append('markSeenIds', options.markSeenIds.join(','));
+    }
     return request<WatchlistResponse>(`/api/watchlists/${watchlistId}/import`, {
       method: 'PUT',
       body: form,

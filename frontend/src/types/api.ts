@@ -42,6 +42,17 @@ export interface WatchlistItemResponse {
   seen: boolean;
 }
 
+export interface WatchlistUpdatePreviewResponse {
+  added: MediaItemResponse[];
+  removed: MediaItemResponse[];
+}
+
+export interface WatchlistUpdateApplyOptions {
+  excludeAddedIds: string[];
+  keepRemovedIds: string[];
+  markSeenIds: string[];
+}
+
 export interface FilterMetadata {
   genres: string[];
   mediaTypes: string[];

@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.imdbselector.application.port.out.TokenPort;
 import com.imdbselector.domain.valueobject.UserId;
 
@@ -45,7 +46,7 @@ public final class JwtTokenAdapter implements TokenPort {
     @Override
     public Optional<UserId> verifyToken(String token) {
         try {
-            var decoded = verifier.verify(token);
+            DecodedJWT decoded = verifier.verify(token);
             return Optional.of(UserId.fromString(decoded.getSubject()));
         } catch (JWTVerificationException | IllegalArgumentException e) {
             return Optional.empty();

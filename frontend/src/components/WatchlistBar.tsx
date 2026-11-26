@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
 import {
   Copy,
-  Film,
   Globe,
   Link2,
   Lock,
   Plus,
   RefreshCw,
+  Ticket,
   Trash2,
   Upload,
   Users,
@@ -100,8 +100,8 @@ export function WatchlistBar({
     <div className="neo-panel-pink p-4 space-y-3">
       <div className="flex items-center justify-between gap-2 border-b border-[#FF1E8A]/35 pb-2">
         <div className="flex items-center gap-2 font-display text-sm font-bold text-[#FF5CA8]">
-          <Film className="h-4 w-4" />
-          <span>Watchlist</span>
+          <Ticket className="h-4 w-4" />
+          <span>Box Office</span>
         </div>
 
         {/* Desktop-only management buttons; hidden on phones */}

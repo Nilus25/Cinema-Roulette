@@ -25,6 +25,8 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
     filter.genres.length +
     filter.mediaTypes.length;
 
+  const hasAnyFilter = activeCount > 0 || filter.excludeSeen;
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -44,30 +46,30 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
             {open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           </button>
 
-          {activeCount > 0 && (
+          {hasUser && (
             <button
               type="button"
-              onClick={onReset}
-              className="inline-flex items-center gap-1 rounded border-2 border-[#FF7A00]/60 bg-[#FF7A00]/15 px-2.5 py-1.5 text-xs font-bold text-[#FF9E44] hover:bg-[#FF7A00] hover:text-[#090118]"
+              onClick={() => onChange({ ...filter, excludeSeen: !filter.excludeSeen })}
+              className={`inline-flex items-center gap-1.5 rounded border-2 px-3.5 py-1.5 text-xs font-bold transition ${
+                filter.excludeSeen
+                  ? 'border-[#FF1E8A] bg-[#FF1E8A] text-white shadow-[0_0_16px_rgba(255,30,138,0.65)]'
+                  : 'border-purple-500/60 bg-[#090118] text-purple-200 hover:border-[#FF1E8A]'
+              }`}
             >
-              <RotateCcw className="h-3 w-3" />
-              <span>Reset</span>
+              <EyeOff className="h-3.5 w-3.5" />
+              <span>{filter.excludeSeen ? 'Unseen Only' : 'Include Seen'}</span>
             </button>
           )}
         </div>
 
-        {hasUser && (
+        {hasAnyFilter && (
           <button
             type="button"
-            onClick={() => onChange({ ...filter, excludeSeen: !filter.excludeSeen })}
-            className={`inline-flex items-center gap-1.5 rounded border-2 px-3.5 py-1.5 text-xs font-bold transition ${
-              filter.excludeSeen
-                ? 'border-[#FF1E8A] bg-[#FF1E8A] text-white shadow-[0_0_16px_rgba(255,30,138,0.65)]'
-                : 'border-purple-500/60 bg-[#090118] text-purple-200 hover:border-[#FF1E8A]'
-            }`}
+            onClick={onReset}
+            className="inline-flex items-center gap-1 rounded border-2 border-[#FF7A00]/60 bg-[#FF7A00]/15 px-2.5 py-1.5 text-xs font-bold text-[#FF9E44] hover:bg-[#FF7A00] hover:text-[#090118]"
           >
-            <EyeOff className="h-3.5 w-3.5" />
-            <span>{filter.excludeSeen ? 'Unseen Only' : 'All Matching'}</span>
+            <RotateCcw className="h-3 w-3" />
+            <span>Reset Filters</span>
           </button>
         )}
       </div>
@@ -136,10 +138,10 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
                         key={g}
                         type="button"
                         onClick={() => onChange({ ...filter, genres: toggleItem(filter.genres, g) })}
-                        className={`rounded border-2 px-2.5 py-1 text-xs font-bold transition ${
+                        className={`rounded-full px-3 py-1 text-xs font-extrabold transition ${
                           active
-                            ? 'border-[#39FF14] bg-[#39FF14] text-[#090118] shadow-[0_0_10px_rgba(57,255,20,0.55)]'
-                            : 'border-purple-500/40 bg-[#14062B] text-purple-100 hover:border-[#39FF14]'
+                            ? 'casino-chip-green'
+                            : 'border-2 border-purple-500/40 bg-[#14062B] text-purple-100 hover:border-[#39FF14]'
                         }`}
                       >
                         {g}
@@ -159,10 +161,10 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
                         key={t}
                         type="button"
                         onClick={() => onChange({ ...filter, mediaTypes: toggleItem(filter.mediaTypes, t) })}
-                        className={`rounded border-2 px-2.5 py-1 text-xs font-bold transition ${
+                        className={`rounded-full px-3 py-1 text-xs font-extrabold transition ${
                           active
-                            ? 'border-[#FF1E8A] bg-[#FF1E8A] text-white shadow-[0_0_10px_rgba(255,30,138,0.55)]'
-                            : 'border-purple-500/40 bg-[#14062B] text-purple-100 hover:border-[#FF1E8A]'
+                            ? 'casino-chip-pink'
+                            : 'border-2 border-purple-500/40 bg-[#14062B] text-purple-100 hover:border-[#FF1E8A]'
                         }`}
                       >
                         {t}

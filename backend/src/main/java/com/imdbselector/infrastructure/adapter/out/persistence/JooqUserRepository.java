@@ -6,6 +6,7 @@ import com.imdbselector.domain.valueobject.ImdbId;
 import com.imdbselector.domain.valueobject.UserId;
 import com.imdbselector.infrastructure.jooq.tables.records.UsersRecord;
 import org.jooq.DSLContext;
+import org.jooq.Result;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -29,7 +30,7 @@ public final class JooqUserRepository implements UserRepository {
 
     @Override
     public List<User> findAll() {
-        var rows = dsl.selectFrom(USERS).orderBy(USERS.NAME.asc()).fetch();
+        Result<UsersRecord> rows = dsl.selectFrom(USERS).orderBy(USERS.NAME.asc()).fetch();
         Map<UUID, Set<ImdbId>> seenByUser = dsl.selectFrom(USER_SEEN_MEDIA)
                 .fetch()
                 .stream()
@@ -39,6 +40,18 @@ public final class JooqUserRepository implements UserRepository {
                 ));
 
         return rows.map(r -> mapUser(r, seenByUser.getOrDefault(r.getId(), Set.of())));
+    }
+
+    @Override
+    public Map<UserId, String> findNamesByIds(Set<UserId> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Map.of();
+        }
+        Set<UUID> uuids = ids.stream().map(UserId::value).collect(Collectors.toSet());
+        return dsl.select(USERS.ID, USERS.NAME)
+                .from(USERS)
+                .where(USERS.ID.in(uuids))
+                .fetchMap(r -> new UserId(r.get(USERS.ID)), r -> r.get(USERS.NAME));
     }
 
     @Override
@@ -65,7 +78,7 @@ public final class JooqUserRepository implements UserRepository {
 
     private User mapUser(UsersRecord record, Set<ImdbId> seen) {
         String lastId = record.getLastGeneratedImdbId();
-        var lastAt = record.getLastGeneratedAt();
+        OffsetDateTime lastAt = record.getLastGeneratedAt();
         return new User(
                 new UserId(record.getId()),
                 record.getName(),
@@ -119,6 +132,9 @@ public final class JooqUserRepository implements UserRepository {
 
     @Override
     public void deleteById(UserId id) {
+        dsl.deleteFrom(USER_SEEN_MEDIA)
+                .where(USER_SEEN_MEDIA.USER_ID.eq(id.value()))
+                .execute();
         dsl.deleteFrom(USERS)
                 .where(USERS.ID.eq(id.value()))
                 .execute();

@@ -35,4 +35,8 @@ public final class DatabaseConfig {
     public static DSLContext createDsl(HikariDataSource dataSource) {
         return DSL.using(dataSource, SQLDialect.POSTGRES);
     }
+
+    public static DSLContext createDsl(JooqTransactionManager txManager) {
+        return DSL.using(txManager.connectionProvider(), SQLDialect.POSTGRES);
+    }
 }

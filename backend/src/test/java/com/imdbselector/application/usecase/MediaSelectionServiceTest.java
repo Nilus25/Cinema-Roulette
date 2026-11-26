@@ -1,14 +1,15 @@
 package com.imdbselector.application.usecase;
 
 import com.imdbselector.application.port.out.MediaItemRepository;
+import com.imdbselector.application.port.out.TransactionPort;
 import com.imdbselector.application.port.out.UserRepository;
 import com.imdbselector.application.port.out.WatchlistRepository;
 import com.imdbselector.application.port.out.WatchlistSubscriptionRepository;
+import com.imdbselector.application.usecase.selection.SelectRandomMediaUseCase;
+import com.imdbselector.domain.model.CinemaRoulette;
 import com.imdbselector.domain.model.MediaItem;
 import com.imdbselector.domain.model.User;
 import com.imdbselector.domain.model.Watchlist;
-import com.imdbselector.domain.service.RandomMediaSelector;
-import com.imdbselector.domain.service.WatchlistFilterService;
 import com.imdbselector.domain.valueobject.FilterCriteria;
 import com.imdbselector.domain.valueobject.Genre;
 import com.imdbselector.domain.valueobject.ImdbId;
@@ -38,29 +39,31 @@ class MediaSelectionServiceTest {
 
     @Test
     void selectsUnseenItemAndPersistsLastGeneratedOnUser() {
-        var item1 = new MediaItem(new ImdbId("tt0111161"), "Shawshank", "Darabont",
+        MediaItem item1 = new MediaItem(new ImdbId("tt0111161"), "Shawshank", "Darabont",
                 new ReleaseYear(1994), Rating.of(9.3), MediaType.MOVIE, null, Set.of(Genre.DRAMA), MetadataSource.CSV);
-        var item2 = new MediaItem(new ImdbId("tt0068646"), "Godfather", "Coppola",
+        MediaItem item2 = new MediaItem(new ImdbId("tt0068646"), "Godfather", "Coppola",
                 new ReleaseYear(1972), Rating.of(9.2), MediaType.MOVIE, null, Set.of(Genre.DRAMA), MetadataSource.CSV);
 
-        var user = User.create("Nil");
+        User user = User.create("Nil");
         user.markAsSeen(item1.imdbId());
-        var watchlist = Watchlist.create(user.id(), "Favorites", List.of(item1.imdbId(), item2.imdbId()));
+        Watchlist watchlist = Watchlist.create(user.id(), "Favorites", List.of(item1.imdbId(), item2.imdbId()));
 
-        var userRepo = new InMemoryUserRepo(user);
-        var wlRepo = new InMemoryWatchlistRepo(watchlist);
-        var mediaRepo = new InMemoryMediaRepo(List.of(item1, item2));
-        var subRepo = new NoopSubRepo();
+        InMemoryUserRepo userRepo = new InMemoryUserRepo(user);
+        InMemoryWatchlistRepo wlRepo = new InMemoryWatchlistRepo(watchlist);
+        InMemoryMediaRepo mediaRepo = new InMemoryMediaRepo(List.of(item1, item2));
+        NoopSubRepo subRepo = new NoopSubRepo();
 
-        var fixedNow = Instant.parse("2026-11-26T12:00:00Z");
-        var service = new MediaSelectionService(
-                wlRepo, subRepo, mediaRepo, userRepo,
-                new WatchlistFilterService(),
-                new RandomMediaSelector(new Random(1)),
+        Instant fixedNow = Instant.parse("2026-11-26T12:00:00Z");
+        TransactionPort noopTx = new TransactionPort() {
+            @Override public <T> T inTransaction(java.util.function.Supplier<T> work) { return work.get(); }
+        };
+        SelectRandomMediaUseCase useCase = new SelectRandomMediaUseCase(
+                wlRepo, subRepo, mediaRepo, userRepo, noopTx,
+                new CinemaRoulette(new Random(1)),
                 Clock.fixed(fixedNow, ZoneOffset.UTC));
 
-        var criteria = new FilterCriteria(null, null, null, null, Set.of(), Set.of(), List.of(), true);
-        MediaItem picked = service.selectRandom(watchlist.id(), user.id(), criteria);
+        FilterCriteria criteria = new FilterCriteria(null, null, null, null, Set.of(), Set.of(), List.of(), true);
+        MediaItem picked = useCase.execute(watchlist.id(), user.id(), criteria);
 
         assertThat(picked).isEqualTo(item2);
         assertThat(user.lastGeneratedImdbId()).isEqualTo(item2.imdbId());
@@ -71,6 +74,7 @@ class MediaSelectionServiceTest {
         private final Map<UserId, User> store = new HashMap<>();
         InMemoryUserRepo(User... users) { for (User u : users) store.put(u.id(), u); }
         @Override public List<User> findAll() { return List.copyOf(store.values()); }
+        @Override public Map<UserId, String> findNamesByIds(Set<UserId> ids) { return Map.of(); }
         @Override public Optional<User> findById(UserId id) { return Optional.ofNullable(store.get(id)); }
         @Override public Optional<User> findByName(String name) { return store.values().stream().filter(u -> u.name().equals(name)).findFirst(); }
         @Override public User save(User user) { store.put(user.id(), user); return user; }
@@ -103,5 +107,7 @@ class MediaSelectionServiceTest {
         @Override public void unsubscribe(UserId u, WatchlistId w) {}
         @Override public boolean isSubscribed(UserId u, WatchlistId w) { return false; }
         @Override public List<WatchlistId> findSubscribedWatchlistIds(UserId u) { return List.of(); }
+        @Override public void deleteByWatchlistId(WatchlistId w) {}
+        @Override public void deleteByUserId(UserId u) {}
     }
 }
