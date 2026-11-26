@@ -19,39 +19,47 @@
 }
 
 .neo-panel-purple {
-  background: #14062B;
-  border: 2px solid #B5179E;
+  background: #13052B;
+  border: 2px solid #D946EF;
   border-radius: 6px;
   box-shadow:
-    6px 6px 0px #7B2CBF,
-    0 0 26px rgba(181, 23, 158, 0.35);
+    0 0 8px rgba(217, 70, 239, 0.85),
+    0 0 24px rgba(168, 85, 247, 0.65),
+    0 0 54px rgba(168, 85, 247, 0.4),
+    inset 0 0 20px rgba(168, 85, 247, 0.25);
 }
 
 .neo-panel-green {
-  background: #101A12;
+  background: #0D1910;
   border: 2px solid #39FF14;
   border-radius: 6px;
   box-shadow:
-    5px 5px 0px #16A34A,
-    0 0 20px rgba(57, 255, 20, 0.28);
+    0 0 8px rgba(57, 255, 20, 0.9),
+    0 0 24px rgba(57, 255, 20, 0.6),
+    0 0 52px rgba(57, 255, 20, 0.38),
+    inset 0 0 18px rgba(57, 255, 20, 0.22);
 }
 
 .neo-panel-pink {
-  background: #1F0722;
-  border: 2px solid #FF1E8A;
+  background: #1F0622;
+  border: 2px solid #FF2A85;
   border-radius: 6px;
   box-shadow:
-    5px 5px 0px #FF7A00,
-    0 0 20px rgba(255, 30, 138, 0.3);
+    0 0 8px rgba(255, 42, 133, 0.9),
+    0 0 24px rgba(255, 42, 133, 0.6),
+    0 0 52px rgba(255, 42, 133, 0.38),
+    inset 0 0 18px rgba(255, 42, 133, 0.22);
 }
 
 .neo-panel-orange {
-  background: #1E0D08;
-  border: 2px solid #FF7A00;
+  background: #1E0B07;
+  border: 2px solid #FF6B4A;
   border-radius: 6px;
   box-shadow:
-    5px 5px 0px #9D4EDD,
-    0 0 20px rgba(255, 122, 0, 0.26);
+    0 0 8px rgba(255, 107, 74, 0.9),
+    0 0 24px rgba(255, 107, 74, 0.6),
+    0 0 52px rgba(255, 107, 74, 0.38),
+    inset 0 0 18px rgba(255, 107, 74, 0.22);
 }
 
 @keyframes rainbow-shift {
