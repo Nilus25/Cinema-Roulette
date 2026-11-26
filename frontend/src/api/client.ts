@@ -6,12 +6,16 @@ import type {
   UserResponse,
   WatchlistItemResponse,
   WatchlistResponse,
+  WatchlistVisibility,
 } from '../types/api';
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, init);
+  const res = await fetch(`${BASE}${path}`, {
+    ...init,
+    credentials: 'include',
+  });
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
     try {
@@ -33,9 +37,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-function buildFilterParams(filter: FilterState, userId?: string | null): URLSearchParams {
+function buildFilterParams(filter: FilterState): URLSearchParams {
   const params = new URLSearchParams();
-  if (userId) params.set('userId', userId);
   if (filter.minRating) params.set('minRating', filter.minRating);
   if (filter.maxRating) params.set('maxRating', filter.maxRating);
   if (filter.minYear) params.set('minYear', filter.minYear);
@@ -50,21 +53,28 @@ function buildFilterParams(filter: FilterState, userId?: string | null): URLSear
 export const api = {
   getFilterMetadata: () => request<FilterMetadata>('/api/metadata/filters'),
 
-  listUsers: () => request<UserResponse[]>('/api/users'),
-  createUser: (name: string) =>
-    request<UserResponse>('/api/users', {
+  register: (username: string, password: string) =>
+    request<UserDetailsResponse>('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ username, password }),
     }),
-  getUserDetails: (userId: string) => request<UserDetailsResponse>(`/api/users/${userId}`),
-  deleteUser: (userId: string) => request<void>(`/api/users/${userId}`, { method: 'DELETE' }),
-  markSeen: (userId: string, imdbId: string) =>
-    request<UserResponse>(`/api/users/${userId}/seen/${imdbId}`, { method: 'POST' }),
-  unmarkSeen: (userId: string, imdbId: string) =>
-    request<UserResponse>(`/api/users/${userId}/seen/${imdbId}`, { method: 'DELETE' }),
+  login: (username: string, password: string) =>
+    request<UserDetailsResponse>('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    }),
+  logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
+  me: () => request<UserDetailsResponse>('/api/auth/me'),
+
+  markSeen: (imdbId: string) =>
+    request<UserResponse>(`/api/users/me/seen/${imdbId}`, { method: 'POST' }),
+  unmarkSeen: (imdbId: string) =>
+    request<UserResponse>(`/api/users/me/seen/${imdbId}`, { method: 'DELETE' }),
 
   listWatchlists: () => request<WatchlistResponse[]>('/api/watchlists'),
+  listPublicWatchlists: () => request<WatchlistResponse[]>('/api/watchlists/public'),
   importWatchlist: (name: string, file: File) => {
     const form = new FormData();
     form.append('name', name);
@@ -79,20 +89,35 @@ export const api = {
       body: form,
     });
   },
+  changeVisibility: (watchlistId: string, visibility: WatchlistVisibility) =>
+    request<WatchlistResponse>(`/api/watchlists/${watchlistId}/visibility`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visibility }),
+    }),
+  subscribeByCode: (shareCode: string) =>
+    request<void>('/api/watchlists/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shareCode }),
+    }),
+  subscribePublic: (watchlistId: string) =>
+    request<void>(`/api/watchlists/${watchlistId}/subscribe`, { method: 'POST' }),
+  unsubscribe: (watchlistId: string) =>
+    request<void>(`/api/watchlists/${watchlistId}/subscribe`, { method: 'DELETE' }),
   deleteWatchlist: (watchlistId: string) =>
     request<void>(`/api/watchlists/${watchlistId}`, { method: 'DELETE' }),
 
-  getWatchlistItems: (watchlistId: string, filter: FilterState, userId?: string | null) => {
-    const qs = buildFilterParams(filter, userId).toString();
+  getWatchlistItems: (watchlistId: string, filter: FilterState) => {
+    const qs = buildFilterParams(filter).toString();
     return request<WatchlistItemResponse[]>(`/api/watchlists/${watchlistId}/items${qs ? `?${qs}` : ''}`);
   },
 
-  selectRandom: (watchlistId: string, filter: FilterState, userId?: string | null) =>
+  selectRandom: (watchlistId: string, filter: FilterState) =>
     request<MediaItemResponse>(`/api/watchlists/${watchlistId}/select`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: userId ?? null,
         minRating: filter.minRating ? Number(filter.minRating) : null,
         maxRating: filter.maxRating ? Number(filter.maxRating) : null,
         minYear: filter.minYear ? Number(filter.minYear) : null,

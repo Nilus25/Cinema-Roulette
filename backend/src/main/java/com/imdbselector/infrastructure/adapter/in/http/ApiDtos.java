@@ -23,7 +23,13 @@ public final class ApiDtos {
     private ApiDtos() {
     }
 
-    public record CreateUserRequest(String name) {
+    public record AuthRequest(String username, String password) {
+    }
+
+    public record SubscribeCodeRequest(String shareCode) {
+    }
+
+    public record VisibilityRequest(String visibility) {
     }
 
     public record UserResponse(
@@ -64,14 +70,23 @@ public final class ApiDtos {
             UUID id,
             String name,
             int itemCount,
-            Instant updatedAt
+            Instant updatedAt,
+            boolean owned,
+            String ownerName,
+            String visibility,
+            String shareCode
     ) {
-        public static WatchlistResponse from(Watchlist wl) {
+        public static WatchlistResponse from(WatchlistService.WatchlistSummary summary) {
+            Watchlist wl = summary.watchlist();
             return new WatchlistResponse(
                     wl.id().value(),
                     wl.name(),
                     wl.mediaItemIds().size(),
-                    wl.updatedAt()
+                    wl.updatedAt(),
+                    summary.owned(),
+                    summary.ownerName(),
+                    wl.visibility().name(),
+                    summary.owned() ? wl.shareCode() : null
             );
         }
     }
@@ -107,7 +122,6 @@ public final class ApiDtos {
     }
 
     public record SelectRequest(
-            UUID userId,
             BigDecimal minRating,
             BigDecimal maxRating,
             Integer minYear,

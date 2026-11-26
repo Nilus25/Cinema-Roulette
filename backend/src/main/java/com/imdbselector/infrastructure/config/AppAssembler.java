@@ -3,11 +3,13 @@ package com.imdbselector.infrastructure.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.imdbselector.application.usecase.AuthService;
 import com.imdbselector.application.usecase.MediaSelectionService;
 import com.imdbselector.application.usecase.UserService;
 import com.imdbselector.application.usecase.WatchlistService;
 import com.imdbselector.domain.service.RandomMediaSelector;
 import com.imdbselector.domain.service.WatchlistFilterService;
+import com.imdbselector.infrastructure.adapter.in.http.AuthController;
 import com.imdbselector.infrastructure.adapter.in.http.HttpObservability;
 import com.imdbselector.infrastructure.adapter.in.http.SelectionController;
 import com.imdbselector.infrastructure.adapter.in.http.UserController;
@@ -17,17 +19,22 @@ import com.imdbselector.infrastructure.adapter.out.persistence.DatabaseConfig;
 import com.imdbselector.infrastructure.adapter.out.persistence.JooqMediaItemRepository;
 import com.imdbselector.infrastructure.adapter.out.persistence.JooqUserRepository;
 import com.imdbselector.infrastructure.adapter.out.persistence.JooqWatchlistRepository;
+import com.imdbselector.infrastructure.adapter.out.persistence.JooqWatchlistSubscriptionRepository;
+import com.imdbselector.infrastructure.adapter.out.security.BcryptPasswordHasher;
+import com.imdbselector.infrastructure.adapter.out.security.JwtTokenAdapter;
 import com.zaxxer.hikari.HikariDataSource;
 import io.javalin.Javalin;
 import io.javalin.json.JavalinJackson;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Map;
 
 /**
  * Manual dependency injection root wiring Domain, Application, and Infrastructure adapters.
  */
 public final class AppAssembler implements AutoCloseable {
+    private static final String DEV_FALLBACK_SECRET = "dev-only-change-me-in-prod-cinema-roulette-secret";
     private final HikariDataSource dataSource;
     private final Javalin javalin;
 
@@ -39,21 +46,30 @@ public final class AppAssembler implements AutoCloseable {
         var mediaRepo = new JooqMediaItemRepository(dsl);
         var userRepo = new JooqUserRepository(dsl);
         var watchlistRepo = new JooqWatchlistRepository(dsl);
+        var subscriptionRepo = new JooqWatchlistSubscriptionRepository(dsl);
         var csvParser = new OpenCsvWatchlistParser();
+
+        var clock = Clock.systemUTC();
+        String jwtSecret = System.getenv().getOrDefault("JWT_SECRET", DEV_FALLBACK_SECRET);
+        var passwordHasher = new BcryptPasswordHasher();
+        var tokenPort = new JwtTokenAdapter(jwtSecret, clock, Duration.ofDays(14));
 
         var filterService = new WatchlistFilterService();
         var selector = new RandomMediaSelector();
-        var clock = Clock.systemUTC();
 
+        var authService = new AuthService(userRepo, passwordHasher, tokenPort);
         var userService = new UserService(userRepo, mediaRepo);
-        var watchlistService = new WatchlistService(watchlistRepo, mediaRepo, userRepo, csvParser, filterService, clock);
-        var selectionService = new MediaSelectionService(watchlistRepo, mediaRepo, userRepo, filterService, selector, clock);
+        var watchlistService = new WatchlistService(
+                watchlistRepo, subscriptionRepo, mediaRepo, userRepo, csvParser, filterService, clock);
+        var selectionService = new MediaSelectionService(
+                watchlistRepo, subscriptionRepo, mediaRepo, userRepo, filterService, selector, clock);
 
-        this.javalin = createJavalin(allowedOrigin, userService, watchlistService, selectionService);
+        this.javalin = createJavalin(allowedOrigin, authService, userService, watchlistService, selectionService);
     }
 
     private Javalin createJavalin(
             String allowedOrigin,
+            AuthService authService,
             UserService userService,
             WatchlistService watchlistService,
             MediaSelectionService selectionService
@@ -66,6 +82,7 @@ public final class AppAssembler implements AutoCloseable {
             config.http.defaultContentType = "application/json";
             config.jsonMapper(new JavalinJackson(mapper, false));
             config.bundledPlugins.enableCors(cors -> cors.addRule(rule -> {
+                rule.allowCredentials = true;
                 if ("*".equals(allowedOrigin)) {
                     rule.anyHost();
                 } else {
@@ -78,9 +95,11 @@ public final class AppAssembler implements AutoCloseable {
 
         app.get("/api/health", ctx -> ctx.json(Map.of("status", "UP")));
 
-        new UserController(userService).registerRoutes(app);
-        new WatchlistController(watchlistService).registerRoutes(app);
-        new SelectionController(selectionService).registerRoutes(app);
+        var authController = new AuthController(authService, userService);
+        authController.registerRoutes(app);
+        new UserController(userService, authController).registerRoutes(app);
+        new WatchlistController(watchlistService, authController).registerRoutes(app);
+        new SelectionController(selectionService, authController).registerRoutes(app);
 
         return app;
     }

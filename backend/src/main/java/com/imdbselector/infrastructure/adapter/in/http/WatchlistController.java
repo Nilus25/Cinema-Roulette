@@ -8,6 +8,7 @@ import com.imdbselector.domain.valueobject.Rating;
 import com.imdbselector.domain.valueobject.ReleaseYear;
 import com.imdbselector.domain.valueobject.UserId;
 import com.imdbselector.domain.valueobject.WatchlistId;
+import com.imdbselector.domain.valueobject.WatchlistVisibility;
 import io.javalin.Javalin;
 import io.javalin.http.UploadedFile;
 
@@ -19,9 +20,11 @@ import java.util.stream.Collectors;
 
 public final class WatchlistController {
     private final WatchlistService watchlistService;
+    private final AuthController authController;
 
-    public WatchlistController(WatchlistService watchlistService) {
+    public WatchlistController(WatchlistService watchlistService, AuthController authController) {
         this.watchlistService = watchlistService;
+        this.authController = authController;
     }
 
     public void registerRoutes(Javalin app) {
@@ -31,37 +34,84 @@ public final class WatchlistController {
                 "minYear", ReleaseYear.MIN_YEAR
         )));
 
-        app.get("/api/watchlists", ctx ->
-                ctx.json(watchlistService.listWatchlists().stream().map(ApiDtos.WatchlistResponse::from).toList()));
+        app.get("/api/watchlists", ctx -> {
+            UserId userId = authController.requireAuthenticatedUser(ctx);
+            var list = watchlistService.listAccessibleWatchlists(userId).stream()
+                    .map(ApiDtos.WatchlistResponse::from)
+                    .toList();
+            ctx.json(list);
+        });
+
+        app.get("/api/watchlists/public", ctx -> {
+            UserId userId = authController.requireAuthenticatedUser(ctx);
+            var list = watchlistService.listPublicWatchlists(userId).stream()
+                    .map(ApiDtos.WatchlistResponse::from)
+                    .toList();
+            ctx.json(list);
+        });
 
         app.post("/api/watchlists", ctx -> {
+            UserId userId = authController.requireAuthenticatedUser(ctx);
             String name = ctx.formParam("name");
             UploadedFile file = ctx.uploadedFile("file");
             if (file == null) {
                 throw new IllegalArgumentException("Missing CSV file part 'file'");
             }
             try (var is = file.content()) {
-                var created = watchlistService.importFromCsv(name, is);
-                ctx.status(201).json(ApiDtos.WatchlistResponse.from(created));
+                var created = watchlistService.importFromCsv(userId, name, is);
+                ctx.status(201).json(ApiDtos.WatchlistResponse.from(
+                        new WatchlistService.WatchlistSummary(created, true, "You")));
             }
         });
 
         app.put("/api/watchlists/{watchlistId}/import", ctx -> {
+            UserId userId = authController.requireAuthenticatedUser(ctx);
             WatchlistId watchlistId = WatchlistId.fromString(ctx.pathParam("watchlistId"));
             UploadedFile file = ctx.uploadedFile("file");
             if (file == null) {
                 throw new IllegalArgumentException("Missing CSV file part 'file'");
             }
             try (var is = file.content()) {
-                var updated = watchlistService.updateFromCsv(watchlistId, is);
-                ctx.json(ApiDtos.WatchlistResponse.from(updated));
+                var updated = watchlistService.updateFromCsv(userId, watchlistId, is);
+                ctx.json(ApiDtos.WatchlistResponse.from(
+                        new WatchlistService.WatchlistSummary(updated, true, "You")));
             }
         });
 
-        app.get("/api/watchlists/{watchlistId}/items", ctx -> {
+        app.patch("/api/watchlists/{watchlistId}/visibility", ctx -> {
+            UserId userId = authController.requireAuthenticatedUser(ctx);
             WatchlistId watchlistId = WatchlistId.fromString(ctx.pathParam("watchlistId"));
-            String rawUserId = ctx.queryParam("userId");
-            UserId userId = (rawUserId == null || rawUserId.isBlank()) ? null : UserId.fromString(rawUserId);
+            var req = ctx.bodyAsClass(ApiDtos.VisibilityRequest.class);
+            WatchlistVisibility visibility = WatchlistVisibility.valueOf(req.visibility().trim().toUpperCase());
+            var updated = watchlistService.changeVisibility(userId, watchlistId, visibility);
+            ctx.json(ApiDtos.WatchlistResponse.from(
+                    new WatchlistService.WatchlistSummary(updated, true, "You")));
+        });
+
+        app.post("/api/watchlists/subscribe", ctx -> {
+            UserId userId = authController.requireAuthenticatedUser(ctx);
+            var req = ctx.bodyAsClass(ApiDtos.SubscribeCodeRequest.class);
+            watchlistService.subscribeByShareCode(userId, req.shareCode());
+            ctx.status(204);
+        });
+
+        app.post("/api/watchlists/{watchlistId}/subscribe", ctx -> {
+            UserId userId = authController.requireAuthenticatedUser(ctx);
+            WatchlistId watchlistId = WatchlistId.fromString(ctx.pathParam("watchlistId"));
+            watchlistService.subscribePublic(userId, watchlistId);
+            ctx.status(204);
+        });
+
+        app.delete("/api/watchlists/{watchlistId}/subscribe", ctx -> {
+            UserId userId = authController.requireAuthenticatedUser(ctx);
+            WatchlistId watchlistId = WatchlistId.fromString(ctx.pathParam("watchlistId"));
+            watchlistService.unsubscribe(userId, watchlistId);
+            ctx.status(204);
+        });
+
+        app.get("/api/watchlists/{watchlistId}/items", ctx -> {
+            UserId userId = authController.requireAuthenticatedUser(ctx);
+            WatchlistId watchlistId = WatchlistId.fromString(ctx.pathParam("watchlistId"));
 
             FilterCriteria criteria = parseQueryCriteria(
                     ctx.queryParam("minRating"),
@@ -74,7 +124,7 @@ public final class WatchlistController {
                     Boolean.parseBoolean(ctx.queryParam("excludeSeen"))
             );
 
-            var items = watchlistService.getWatchlistItems(watchlistId, criteria, userId)
+            var items = watchlistService.getWatchlistItems(userId, watchlistId, criteria)
                     .stream()
                     .map(ApiDtos.WatchlistItemResponse::from)
                     .toList();
@@ -82,8 +132,9 @@ public final class WatchlistController {
         });
 
         app.delete("/api/watchlists/{watchlistId}", ctx -> {
+            UserId userId = authController.requireAuthenticatedUser(ctx);
             WatchlistId watchlistId = WatchlistId.fromString(ctx.pathParam("watchlistId"));
-            watchlistService.deleteWatchlist(watchlistId);
+            watchlistService.deleteWatchlist(userId, watchlistId);
             ctx.status(204);
         });
     }

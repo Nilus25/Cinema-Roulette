@@ -14,6 +14,7 @@ import com.imdbselector.domain.valueobject.MediaType;
 import com.imdbselector.domain.valueobject.MetadataSource;
 import com.imdbselector.domain.valueobject.Rating;
 import com.imdbselector.domain.valueobject.ReleaseYear;
+import com.imdbselector.domain.valueobject.UserId;
 import com.imdbselector.infrastructure.adapter.out.persistence.DatabaseConfig;
 import com.imdbselector.infrastructure.adapter.out.persistence.JooqMediaItemRepository;
 import com.imdbselector.infrastructure.adapter.out.persistence.JooqUserRepository;
@@ -94,12 +95,8 @@ public final class LegacyJsonMigrator {
         mediaRepo.upsertAll(items);
         List<ImdbId> ids = items.stream().map(MediaItem::imdbId).toList();
 
-        Watchlist watchlist = watchlistRepo.findByName(raw.name().trim())
-                .map(existing -> {
-                    existing.replaceItems(ids, Instant.now());
-                    return existing;
-                })
-                .orElseGet(() -> Watchlist.create(raw.name().trim(), ids));
+        Watchlist watchlist = watchlistRepo.findByOwnerAndName(UserId.random(), raw.name().trim())
+                .orElseGet(() -> Watchlist.create(UserId.random(), raw.name().trim(), ids));
         watchlistRepo.save(watchlist);
         log.info("Migrated watchlist '{}' ({} items)", watchlist.name(), ids.size());
     }

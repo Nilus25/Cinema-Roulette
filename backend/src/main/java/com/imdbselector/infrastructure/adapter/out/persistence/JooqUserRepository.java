@@ -69,6 +69,7 @@ public final class JooqUserRepository implements UserRepository {
         return new User(
                 new UserId(record.getId()),
                 record.getName(),
+                record.getPasswordHash(),
                 seen,
                 lastId == null ? null : new ImdbId(lastId),
                 lastAt == null ? null : lastAt.toInstant(),
@@ -88,12 +89,14 @@ public final class JooqUserRepository implements UserRepository {
             tx.insertInto(USERS)
                     .set(USERS.ID, user.id().value())
                     .set(USERS.NAME, user.name())
+                    .set(USERS.PASSWORD_HASH, user.passwordHash())
                     .set(USERS.LAST_GENERATED_IMDB_ID, lastGenId)
                     .set(USERS.LAST_GENERATED_AT, lastGenAt)
                     .set(USERS.CREATED_AT, created)
                     .onConflict(USERS.ID)
                     .doUpdate()
                     .set(USERS.NAME, user.name())
+                    .set(USERS.PASSWORD_HASH, user.passwordHash())
                     .set(USERS.LAST_GENERATED_IMDB_ID, lastGenId)
                     .set(USERS.LAST_GENERATED_AT, lastGenAt)
                     .execute();

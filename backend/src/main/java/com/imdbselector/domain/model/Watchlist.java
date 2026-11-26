@@ -1,7 +1,9 @@
 package com.imdbselector.domain.model;
 
 import com.imdbselector.domain.valueobject.ImdbId;
+import com.imdbselector.domain.valueobject.UserId;
 import com.imdbselector.domain.valueobject.WatchlistId;
+import com.imdbselector.domain.valueobject.WatchlistVisibility;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -11,39 +13,77 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Aggregate root representing a named collection of MediaItem references.
+ * Aggregate root representing a named collection of MediaItem references owned by a User.
  */
 public final class Watchlist {
     private final WatchlistId id;
+    private final UserId ownerUserId;
     private final String name;
+    private WatchlistVisibility visibility;
+    private String shareCode;
     private List<ImdbId> mediaItemIds;
     private final Instant createdAt;
     private Instant updatedAt;
 
     public Watchlist(
             WatchlistId id,
+            UserId ownerUserId,
             String name,
+            WatchlistVisibility visibility,
+            String shareCode,
             List<ImdbId> mediaItemIds,
             Instant createdAt,
             Instant updatedAt
     ) {
         this.id = Objects.requireNonNull(id, "id must not be null");
+        this.ownerUserId = ownerUserId;
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Watchlist name must not be blank");
         }
         this.name = name.trim();
+        this.visibility = visibility == null ? WatchlistVisibility.PRIVATE : visibility;
+        this.shareCode = shareCode;
         this.mediaItemIds = deduplicate(mediaItemIds);
         this.createdAt = createdAt == null ? Instant.now() : createdAt;
         this.updatedAt = updatedAt == null ? this.createdAt : updatedAt;
     }
 
-    public static Watchlist create(String name, List<ImdbId> mediaItemIds) {
+    public static Watchlist create(UserId ownerUserId, String name, List<ImdbId> mediaItemIds) {
         Instant now = Instant.now();
-        return new Watchlist(WatchlistId.random(), name, mediaItemIds, now, now);
+        return new Watchlist(
+                WatchlistId.random(),
+                Objects.requireNonNull(ownerUserId, "ownerUserId must not be null"),
+                name,
+                WatchlistVisibility.PRIVATE,
+                null,
+                mediaItemIds,
+                now,
+                now
+        );
+    }
+
+    public boolean isOwnedBy(UserId userId) {
+        return userId != null && ownerUserId != null && ownerUserId.equals(userId);
+    }
+
+    public boolean canBeViewedBy(UserId userId, boolean isSubscribed) {
+        if (isOwnedBy(userId)) {
+            return true;
+        }
+        if (visibility == WatchlistVisibility.PUBLIC) {
+            return true;
+        }
+        return visibility == WatchlistVisibility.SHARED && isSubscribed;
     }
 
     public void replaceItems(List<ImdbId> newMediaItemIds, Instant updatedAt) {
         this.mediaItemIds = deduplicate(newMediaItemIds);
+        this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt must not be null");
+    }
+
+    public void changeVisibility(WatchlistVisibility newVisibility, String newShareCode, Instant updatedAt) {
+        this.visibility = Objects.requireNonNull(newVisibility, "visibility must not be null");
+        this.shareCode = newShareCode;
         this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt must not be null");
     }
 
@@ -58,8 +98,20 @@ public final class Watchlist {
         return id;
     }
 
+    public UserId ownerUserId() {
+        return ownerUserId;
+    }
+
     public String name() {
         return name;
+    }
+
+    public WatchlistVisibility visibility() {
+        return visibility;
+    }
+
+    public String shareCode() {
+        return shareCode;
     }
 
     public List<ImdbId> mediaItemIds() {

@@ -3,6 +3,7 @@ package com.imdbselector.application.usecase;
 import com.imdbselector.application.port.out.MediaItemRepository;
 import com.imdbselector.application.port.out.UserRepository;
 import com.imdbselector.application.port.out.WatchlistRepository;
+import com.imdbselector.application.port.out.WatchlistSubscriptionRepository;
 import com.imdbselector.domain.model.MediaItem;
 import com.imdbselector.domain.model.User;
 import com.imdbselector.domain.model.Watchlist;
@@ -44,15 +45,16 @@ class MediaSelectionServiceTest {
 
         var user = User.create("Nil");
         user.markAsSeen(item1.imdbId());
-        var watchlist = Watchlist.create("Favorites", List.of(item1.imdbId(), item2.imdbId()));
+        var watchlist = Watchlist.create(user.id(), "Favorites", List.of(item1.imdbId(), item2.imdbId()));
 
         var userRepo = new InMemoryUserRepo(user);
         var wlRepo = new InMemoryWatchlistRepo(watchlist);
         var mediaRepo = new InMemoryMediaRepo(List.of(item1, item2));
+        var subRepo = new NoopSubRepo();
 
         var fixedNow = Instant.parse("2026-11-26T12:00:00Z");
         var service = new MediaSelectionService(
-                wlRepo, mediaRepo, userRepo,
+                wlRepo, subRepo, mediaRepo, userRepo,
                 new WatchlistFilterService(),
                 new RandomMediaSelector(new Random(1)),
                 Clock.fixed(fixedNow, ZoneOffset.UTC));
@@ -78,9 +80,12 @@ class MediaSelectionServiceTest {
     private static final class InMemoryWatchlistRepo implements WatchlistRepository {
         private final Map<WatchlistId, Watchlist> store = new HashMap<>();
         InMemoryWatchlistRepo(Watchlist... lists) { for (Watchlist w : lists) store.put(w.id(), w); }
-        @Override public List<Watchlist> findAll() { return List.copyOf(store.values()); }
+        @Override public List<Watchlist> findByOwner(UserId owner) { return store.values().stream().filter(w -> w.isOwnedBy(owner)).toList(); }
+        @Override public List<Watchlist> findByIds(Collection<WatchlistId> ids) { return ids.stream().map(store::get).filter(Objects::nonNull).toList(); }
+        @Override public List<Watchlist> findPublicWatchlists() { return List.of(); }
         @Override public Optional<Watchlist> findById(WatchlistId id) { return Optional.ofNullable(store.get(id)); }
-        @Override public Optional<Watchlist> findByName(String name) { return store.values().stream().filter(w -> w.name().equals(name)).findFirst(); }
+        @Override public Optional<Watchlist> findByOwnerAndName(UserId owner, String name) { return store.values().stream().filter(w -> w.isOwnedBy(owner) && w.name().equals(name)).findFirst(); }
+        @Override public Optional<Watchlist> findByShareCode(String code) { return Optional.empty(); }
         @Override public Watchlist save(Watchlist watchlist) { store.put(watchlist.id(), watchlist); return watchlist; }
         @Override public void deleteById(WatchlistId id) { store.remove(id); }
     }
@@ -91,5 +96,12 @@ class MediaSelectionServiceTest {
         @Override public void upsertAll(List<MediaItem> items) { for (MediaItem m : items) store.put(m.imdbId(), m); }
         @Override public Optional<MediaItem> findById(ImdbId id) { return Optional.ofNullable(store.get(id)); }
         @Override public List<MediaItem> findByIds(Collection<ImdbId> ids) { return ids.stream().map(store::get).filter(Objects::nonNull).toList(); }
+    }
+
+    private static final class NoopSubRepo implements WatchlistSubscriptionRepository {
+        @Override public void subscribe(UserId u, WatchlistId w) {}
+        @Override public void unsubscribe(UserId u, WatchlistId w) {}
+        @Override public boolean isSubscribed(UserId u, WatchlistId w) { return false; }
+        @Override public List<WatchlistId> findSubscribedWatchlistIds(UserId u) { return List.of(); }
     }
 }
