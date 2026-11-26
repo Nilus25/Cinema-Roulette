@@ -106,18 +106,18 @@ export function App() {
 
   return (
     <div className="min-h-screen pb-12">
-      <div className="mx-auto max-w-3xl px-4 py-6 space-y-5">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 space-y-6">
         {/* Header */}
-        <header className="neo-panel flex items-center justify-between px-4 py-3.5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded border-2 border-[#39FF14] bg-[#090118] text-[#39FF14] shadow-[0_0_14px_rgba(57,255,20,0.45)]">
-              <Clapperboard className="h-5 w-5" />
+        <header className="neo-panel-purple flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 items-center justify-center rounded border-2 border-[#39FF14] bg-[#090118] text-[#39FF14] shadow-[0_0_16px_rgba(57,255,20,0.5)]">
+              <Clapperboard className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="font-display text-2xl font-extrabold tracking-tight text-[#39FF14] drop-shadow-[0_0_10px_rgba(57,255,20,0.5)]">
+              <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-[#39FF14] drop-shadow-[0_0_12px_rgba(57,255,20,0.55)]">
                 IMDBSelector
               </h1>
-              <p className="text-xs font-semibold text-purple-200/75">
+              <p className="text-xs font-semibold text-[#FF8DC7]">
                 Pick something to watch without the endless scroll
               </p>
             </div>
@@ -130,124 +130,128 @@ export function App() {
           </div>
         )}
 
-        {/* Zone 1: Profile & Watchlist */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ProfileBar
-            users={users}
-            selectedUserId={selectedUserId}
-            onSelectUser={setSelectedUserId}
-            onCreateUser={(name) =>
-              runAction(async () => {
-                const created = await api.createUser(name);
-                await refreshLists();
-                setSelectedUserId(created.id);
-              })
-            }
-            onDeleteUser={(id) =>
-              runAction(async () => {
-                await api.deleteUser(id);
-                setSelectedUserId(null);
-                await refreshLists();
-              })
-            }
-            lastGeneratedPrompt={lastGeneratedPrompt}
-            onMarkLastSeen={(imdbId) =>
-              runAction(async () => {
-                if (!selectedUserId) return;
-                await api.markSeen(selectedUserId, imdbId);
-                setLastGeneratedPrompt(null);
-                await Promise.all([refreshLists(), loadItems()]);
-              })
-            }
-            onDismissPrompt={() => setLastGeneratedPrompt(null)}
-          />
+        {/* Asymmetric 2-Pane Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Main Stage (7 cols) */}
+          <main className="lg:col-span-7 space-y-6">
+            <section className="neo-panel-purple p-5 sm:p-6 space-y-5">
+              <FilterPanel
+                metadata={metadata}
+                filter={filter}
+                hasUser={Boolean(selectedUserId)}
+                onChange={setFilter}
+                onReset={() => setFilter(EMPTY_FILTER)}
+              />
 
-          <WatchlistBar
-            watchlists={watchlists}
-            selectedWatchlistId={selectedWatchlistId}
-            onSelectWatchlist={setSelectedWatchlistId}
-            onImportWatchlist={(name, file) =>
-              runAction(async () => {
-                const created = await api.importWatchlist(name, file);
-                await refreshLists();
-                setSelectedWatchlistId(created.id);
-              })
-            }
-            onUpdateWatchlistCsv={(id, file) =>
-              runAction(async () => {
-                await api.updateWatchlistCsv(id, file);
-                await Promise.all([refreshLists(), loadItems()]);
-              })
-            }
-            onDeleteWatchlist={(id) =>
-              runAction(async () => {
-                await api.deleteWatchlist(id);
-                setSelectedWatchlistId(null);
-                setPicked(null);
-                await refreshLists();
-              })
-            }
-          />
-        </div>
-
-        {/* Zone 2: Picker Stage */}
-        <section className="neo-panel-hero p-5 space-y-5">
-          <FilterPanel
-            metadata={metadata}
-            filter={filter}
-            hasUser={Boolean(selectedUserId)}
-            onChange={setFilter}
-            onReset={() => setFilter(EMPTY_FILTER)}
-          />
-
-          <PickCard
-            canPick={Boolean(selectedWatchlistId)}
-            candidateCount={items.length}
-            loading={picking}
-            picked={picked}
-            hasUser={Boolean(selectedUserId)}
-            onPick={() =>
-              runAction(async () => {
-                if (!selectedWatchlistId) return;
-                setPicking(true);
-                try {
-                  const result = await api.selectRandom(selectedWatchlistId, filter, selectedUserId);
-                  setPicked(result);
-                  fireRainbowConfetti();
-                } finally {
-                  setPicking(false);
+              <PickCard
+                canPick={Boolean(selectedWatchlistId)}
+                candidateCount={items.length}
+                loading={picking}
+                picked={picked}
+                hasUser={Boolean(selectedUserId)}
+                onPick={() =>
+                  runAction(async () => {
+                    if (!selectedWatchlistId) return;
+                    setPicking(true);
+                    try {
+                      const result = await api.selectRandom(selectedWatchlistId, filter, selectedUserId);
+                      setPicked(result);
+                      fireRainbowConfetti();
+                    } finally {
+                      setPicking(false);
+                    }
+                  })
                 }
-              })
-            }
-            onMarkSeen={(imdbId) =>
-              runAction(async () => {
-                if (!selectedUserId) return;
-                await api.markSeen(selectedUserId, imdbId);
-                await Promise.all([refreshLists(), loadItems()]);
-              })
-            }
-          />
-        </section>
+                onMarkSeen={(imdbId) =>
+                  runAction(async () => {
+                    if (!selectedUserId) return;
+                    await api.markSeen(selectedUserId, imdbId);
+                    await Promise.all([refreshLists(), loadItems()]);
+                  })
+                }
+              />
+            </section>
+          </main>
 
-        {/* Zone 3: Watchlist Vault */}
-        {selectedWatchlistId && (
-          <WatchlistBrowser
-            items={items}
-            hasUser={Boolean(selectedUserId)}
-            loading={loadingItems}
-            onToggleSeen={(imdbId, currentlySeen) =>
-              runAction(async () => {
-                if (!selectedUserId) return;
-                if (currentlySeen) {
-                  await api.unmarkSeen(selectedUserId, imdbId);
-                } else {
+          {/* Side Controls & Vault (5 cols) */}
+          <aside className="lg:col-span-5 space-y-5">
+            <ProfileBar
+              users={users}
+              selectedUserId={selectedUserId}
+              onSelectUser={setSelectedUserId}
+              onCreateUser={(name) =>
+                runAction(async () => {
+                  const created = await api.createUser(name);
+                  await refreshLists();
+                  setSelectedUserId(created.id);
+                })
+              }
+              onDeleteUser={(id) =>
+                runAction(async () => {
+                  await api.deleteUser(id);
+                  setSelectedUserId(null);
+                  await refreshLists();
+                })
+              }
+              lastGeneratedPrompt={lastGeneratedPrompt}
+              onMarkLastSeen={(imdbId) =>
+                runAction(async () => {
+                  if (!selectedUserId) return;
                   await api.markSeen(selectedUserId, imdbId);
+                  setLastGeneratedPrompt(null);
+                  await Promise.all([refreshLists(), loadItems()]);
+                })
+              }
+              onDismissPrompt={() => setLastGeneratedPrompt(null)}
+            />
+
+            <WatchlistBar
+              watchlists={watchlists}
+              selectedWatchlistId={selectedWatchlistId}
+              onSelectWatchlist={setSelectedWatchlistId}
+              onImportWatchlist={(name, file) =>
+                runAction(async () => {
+                  const created = await api.importWatchlist(name, file);
+                  await refreshLists();
+                  setSelectedWatchlistId(created.id);
+                })
+              }
+              onUpdateWatchlistCsv={(id, file) =>
+                runAction(async () => {
+                  await api.updateWatchlistCsv(id, file);
+                  await Promise.all([refreshLists(), loadItems()]);
+                })
+              }
+              onDeleteWatchlist={(id) =>
+                runAction(async () => {
+                  await api.deleteWatchlist(id);
+                  setSelectedWatchlistId(null);
+                  setPicked(null);
+                  await refreshLists();
+                })
+              }
+            />
+
+            {selectedWatchlistId && (
+              <WatchlistBrowser
+                items={items}
+                hasUser={Boolean(selectedUserId)}
+                loading={loadingItems}
+                onToggleSeen={(imdbId, currentlySeen) =>
+                  runAction(async () => {
+                    if (!selectedUserId) return;
+                    if (currentlySeen) {
+                      await api.unmarkSeen(selectedUserId, imdbId);
+                    } else {
+                      await api.markSeen(selectedUserId, imdbId);
+                    }
+                    await Promise.all([refreshLists(), loadItems()]);
+                  })
                 }
-                await Promise.all([refreshLists(), loadItems()]);
-              })
-            }
-          />
-        )}
+              />
+            )}
+          </aside>
+        </div>
       </div>
     </div>
   );
