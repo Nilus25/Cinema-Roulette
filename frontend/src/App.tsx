@@ -153,7 +153,7 @@ export function App() {
 
   return (
     <div className="min-h-screen pb-12">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 space-y-4">
+      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 py-6 space-y-4">
         {error && (
           <div className="rounded border-2 border-[#FF2E54] bg-[#290510] px-4 py-3 text-xs font-bold text-rose-200 shadow-[4px_4px_0px_#FF2E54]">
             {error}
@@ -196,8 +196,8 @@ export function App() {
             />
           </aside>
 
-          {/* Center Column: Unified Title + Filters + Picker Stage (5 cols) */}
-          <main className="order-1 lg:order-2 lg:col-span-5">
+          {/* Center Column: Unified Title + Filters + Picker Stage (6 cols) */}
+          <main className="order-1 lg:order-2 lg:col-span-6">
             <section className="neo-panel-purple overflow-hidden">
               <header className="flex items-center gap-3.5 border-b-2 border-[#B5179E]/60 bg-[#0D031F] px-5 py-4">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded border-2 border-[#39FF14] bg-[#090118] text-[#39FF14] shadow-[0_0_16px_rgba(57,255,20,0.5)]">
@@ -253,8 +253,8 @@ export function App() {
             </section>
           </main>
 
-          {/* Right Column: Watchlist + Stats + Vault (4 cols) */}
-          <aside className="order-3 lg:col-span-4 space-y-4">
+          {/* Right Column: Watchlist + Stats + Vault (3 cols) */}
+          <aside className="order-3 lg:col-span-3 space-y-4">
             <WatchlistBar
               watchlists={watchlists}
               selectedWatchlistId={selectedWatchlistId}
