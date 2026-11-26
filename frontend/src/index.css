@@ -106,3 +106,22 @@
 .animate-pop-card {
   animation: pop-card 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* 35mm cinema filmstrip lateral rails */
+.filmstrip-rail {
+  width: 22px;
+  flex-shrink: 0;
+  background-color: #030008;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 10px,
+    rgba(181, 23, 158, 0.35) 10px,
+    rgba(181, 23, 158, 0.35) 22px,
+    transparent 22px,
+    transparent 32px
+  );
+  background-size: 10px 32px;
+  background-position: center;
+  background-repeat: repeat-y;
+}

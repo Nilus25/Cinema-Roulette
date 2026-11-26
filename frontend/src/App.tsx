@@ -196,60 +196,64 @@ export function App() {
             />
           </aside>
 
-          {/* Center Column: Unified Title + Filters + Picker Stage (6 cols) */}
+          {/* Center Column: Unified Title + Filters + Picker Stage (6 cols) with 35mm lateral rails */}
           <main className="order-1 lg:order-2 lg:col-span-6">
-            <section className="neo-panel-purple overflow-hidden">
-              <header className="flex items-center gap-3.5 border-b-2 border-[#B5179E]/60 bg-[#0D031F] px-5 py-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded border-2 border-[#39FF14] bg-[#090118] text-[#39FF14] shadow-[0_0_16px_rgba(57,255,20,0.5)]">
-                  <Clapperboard className="h-6 w-6" />
-                </div>
-                <div>
-                  <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-[#39FF14] drop-shadow-[0_0_12px_rgba(57,255,20,0.55)]">
-                    IMDBSelector
-                  </h1>
-                  <p className="text-xs font-semibold text-[#FF8DC7]">
-                    Pick something to watch without the endless scroll
-                  </p>
-                </div>
-              </header>
+            <section className="neo-panel-purple flex overflow-hidden">
+              <div className="filmstrip-rail hidden sm:block border-r-2 border-[#B5179E]/45" />
+              <div className="flex-1 min-w-0">
+                <header className="flex items-center gap-3.5 border-b-2 border-[#B5179E]/60 bg-[#0D031F] px-5 py-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded border-2 border-[#39FF14] bg-[#090118] text-[#39FF14] shadow-[0_0_16px_rgba(57,255,20,0.5)]">
+                    <Clapperboard className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-[#39FF14] drop-shadow-[0_0_12px_rgba(57,255,20,0.55)]">
+                      IMDBSelector
+                    </h1>
+                    <p className="text-xs font-semibold text-[#FF8DC7]">
+                      Pick something to watch without the endless scroll
+                    </p>
+                  </div>
+                </header>
 
-              <div className="p-5 space-y-5">
-                <FilterPanel
-                  metadata={metadata}
-                  filter={filter}
-                  hasUser={Boolean(selectedUserId)}
-                  onChange={setFilter}
-                  onReset={() => setFilter(EMPTY_FILTER)}
-                />
+                <div className="p-5 space-y-5">
+                  <FilterPanel
+                    metadata={metadata}
+                    filter={filter}
+                    hasUser={Boolean(selectedUserId)}
+                    onChange={setFilter}
+                    onReset={() => setFilter(EMPTY_FILTER)}
+                  />
 
-                <PickCard
-                  canPick={Boolean(selectedWatchlistId)}
-                  candidateCount={items.length}
-                  loading={picking}
-                  picked={picked}
-                  hasUser={Boolean(selectedUserId)}
-                  onPick={() =>
-                    runAction(async () => {
-                      if (!selectedWatchlistId) return;
-                      setPicking(true);
-                      try {
-                        const result = await api.selectRandom(selectedWatchlistId, filter, selectedUserId);
-                        setPicked(result);
-                        fireRainbowConfetti();
-                      } finally {
-                        setPicking(false);
-                      }
-                    })
-                  }
-                  onMarkSeen={(imdbId) =>
-                    runAction(async () => {
-                      if (!selectedUserId) return;
-                      await api.markSeen(selectedUserId, imdbId);
-                      await Promise.all([refreshLists(), refreshUserDetails(selectedUserId), loadItems()]);
-                    })
-                  }
-                />
+                  <PickCard
+                    canPick={Boolean(selectedWatchlistId)}
+                    candidateCount={items.length}
+                    loading={picking}
+                    picked={picked}
+                    hasUser={Boolean(selectedUserId)}
+                    onPick={() =>
+                      runAction(async () => {
+                        if (!selectedWatchlistId) return;
+                        setPicking(true);
+                        try {
+                          const result = await api.selectRandom(selectedWatchlistId, filter, selectedUserId);
+                          setPicked(result);
+                          fireRainbowConfetti();
+                        } finally {
+                          setPicking(false);
+                        }
+                      })
+                    }
+                    onMarkSeen={(imdbId) =>
+                      runAction(async () => {
+                        if (!selectedUserId) return;
+                        await api.markSeen(selectedUserId, imdbId);
+                        await Promise.all([refreshLists(), refreshUserDetails(selectedUserId), loadItems()]);
+                      })
+                    }
+                  />
+                </div>
               </div>
+              <div className="filmstrip-rail hidden sm:block border-l-2 border-[#B5179E]/45" />
             </section>
           </main>
 
