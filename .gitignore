@@ -39,3 +39,5 @@ frontend/dist/
 ### Local Agent & Planning Docs ###
 GEMINI.md
 documentation/
+test-data/
+.env.prod

@@ -2,9 +2,11 @@ package com.imdbselector.infrastructure.adapter.in.http;
 
 import com.imdbselector.domain.exception.DomainException;
 import com.imdbselector.domain.exception.DuplicateResourceException;
+import com.imdbselector.domain.exception.ForbiddenException;
 import com.imdbselector.domain.exception.InvalidCsvException;
 import com.imdbselector.domain.exception.NoMatchingMediaException;
 import com.imdbselector.domain.exception.ResourceNotFoundException;
+import com.imdbselector.domain.exception.UnauthorizedException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import org.slf4j.Logger;
@@ -53,6 +55,8 @@ public final class HttpObservability {
                 case NoMatchingMediaException ex -> problem(404, "No Matching Media", "NO_MATCHING_MEDIA", ex.getMessage(), traceId);
                 case DuplicateResourceException ex -> problem(409, "Conflict", "CONFLICT", ex.getMessage(), traceId);
                 case InvalidCsvException ex -> problem(400, "Invalid CSV", "INVALID_CSV", ex.getMessage(), traceId);
+                case UnauthorizedException ex -> problem(401, "Unauthorized", "UNAUTHORIZED", ex.getMessage(), traceId);
+                case ForbiddenException ex -> problem(403, "Forbidden", "FORBIDDEN", ex.getMessage(), traceId);
             };
             ctx.status(problem.status())
                     .contentType("application/problem+json")
@@ -60,7 +64,7 @@ public final class HttpObservability {
         });
 
         app.exception(IllegalArgumentException.class, (e, ctx) -> {
-            var problem = problem(400, "Bad Request", "BAD_REQUEST", e.getMessage(), traceIdOf(ctx));
+            ApiDtos.ProblemDetail problem = problem(400, "Bad Request", "BAD_REQUEST", e.getMessage(), traceIdOf(ctx));
             ctx.status(400)
                     .contentType("application/problem+json")
                     .json(problem);
@@ -69,7 +73,7 @@ public final class HttpObservability {
         app.exception(Exception.class, (e, ctx) -> {
             String traceId = traceIdOf(ctx);
             log.error("Unhandled technical error on {} {} [traceId={}]", ctx.method(), ctx.path(), traceId, e);
-            var problem = problem(
+            ApiDtos.ProblemDetail problem = problem(
                     500,
                     "Internal Server Error",
                     "INTERNAL_ERROR",

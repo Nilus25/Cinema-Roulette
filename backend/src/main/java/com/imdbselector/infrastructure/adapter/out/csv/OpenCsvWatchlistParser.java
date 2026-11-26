@@ -34,7 +34,7 @@ public final class OpenCsvWatchlistParser implements CsvWatchlistParserPort {
             throw new InvalidCsvException("CSV input stream must not be null");
         }
         List<MediaItem> items = new ArrayList<>();
-        try (var reader = new CSVReaderHeaderAware(new InputStreamReader(csvStream, StandardCharsets.UTF_8))) {
+        try (CSVReaderHeaderAware reader = new CSVReaderHeaderAware(new InputStreamReader(csvStream, StandardCharsets.UTF_8))) {
             Map<String, String> row;
             while ((row = reader.readMap()) != null) {
                 String rawId = firstPresent(row, "Const", "const");
@@ -73,7 +73,7 @@ public final class OpenCsvWatchlistParser implements CsvWatchlistParserPort {
 
     private static String firstPresent(Map<String, String> row, String... keys) {
         for (String key : keys) {
-            for (var entry : row.entrySet()) {
+            for (Map.Entry<String, String> entry : row.entrySet()) {
                 if (entry.getKey() != null && entry.getKey().trim().equalsIgnoreCase(key)) {
                     return entry.getValue();
                 }

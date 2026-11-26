@@ -1,7 +1,8 @@
 package com.imdbselector.infrastructure.adapter.in.http;
 
-import com.imdbselector.application.usecase.UserService;
-import com.imdbselector.application.usecase.WatchlistService;
+import com.imdbselector.application.usecase.user.UserDetails;
+import com.imdbselector.application.usecase.watchlist.WatchlistItemView;
+import com.imdbselector.application.usecase.watchlist.WatchlistSummary;
 import com.imdbselector.domain.model.MediaItem;
 import com.imdbselector.domain.model.User;
 import com.imdbselector.domain.model.Watchlist;
@@ -10,6 +11,7 @@ import com.imdbselector.domain.valueobject.Genre;
 import com.imdbselector.domain.valueobject.MediaType;
 import com.imdbselector.domain.valueobject.Rating;
 import com.imdbselector.domain.valueobject.ReleaseYear;
+import com.imdbselector.domain.valueobject.WatchlistDiff;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -23,7 +25,13 @@ public final class ApiDtos {
     private ApiDtos() {
     }
 
-    public record CreateUserRequest(String name) {
+    public record AuthRequest(String username, String password) {
+    }
+
+    public record SubscribeCodeRequest(String shareCode) {
+    }
+
+    public record VisibilityRequest(String visibility) {
     }
 
     public record UserResponse(
@@ -50,7 +58,7 @@ public final class ApiDtos {
             MediaItemResponse unseenLastGeneratedPrompt,
             List<MediaItemResponse> seenItems
     ) {
-        public static UserDetailsResponse from(UserService.UserDetails details) {
+        public static UserDetailsResponse from(UserDetails details) {
             return new UserDetailsResponse(
                     details.user().id().value(),
                     details.user().name(),
@@ -64,14 +72,23 @@ public final class ApiDtos {
             UUID id,
             String name,
             int itemCount,
-            Instant updatedAt
+            Instant updatedAt,
+            boolean owned,
+            String ownerName,
+            String visibility,
+            String shareCode
     ) {
-        public static WatchlistResponse from(Watchlist wl) {
+        public static WatchlistResponse from(WatchlistSummary summary) {
+            Watchlist wl = summary.watchlist();
             return new WatchlistResponse(
                     wl.id().value(),
                     wl.name(),
                     wl.mediaItemIds().size(),
-                    wl.updatedAt()
+                    wl.updatedAt(),
+                    summary.owned(),
+                    summary.ownerName(),
+                    wl.visibility().name(),
+                    summary.owned() ? wl.shareCode() : null
             );
         }
     }
@@ -101,13 +118,24 @@ public final class ApiDtos {
     }
 
     public record WatchlistItemResponse(MediaItemResponse item, boolean seen) {
-        public static WatchlistItemResponse from(WatchlistService.WatchlistItemView view) {
+        public static WatchlistItemResponse from(WatchlistItemView view) {
             return new WatchlistItemResponse(MediaItemResponse.from(view.item()), view.seen());
         }
     }
 
+    public record WatchlistUpdatePreviewResponse(
+            List<MediaItemResponse> added,
+            List<MediaItemResponse> removed
+    ) {
+        public static WatchlistUpdatePreviewResponse from(WatchlistDiff diff) {
+            return new WatchlistUpdatePreviewResponse(
+                    diff.added().stream().map(MediaItemResponse::from).toList(),
+                    diff.removed().stream().map(MediaItemResponse::from).toList()
+            );
+        }
+    }
+
     public record SelectRequest(
-            UUID userId,
             BigDecimal minRating,
             BigDecimal maxRating,
             Integer minYear,

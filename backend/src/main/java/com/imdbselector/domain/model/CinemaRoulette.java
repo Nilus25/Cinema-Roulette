@@ -1,34 +1,36 @@
-package com.imdbselector.domain.service;
+package com.imdbselector.domain.model;
 
 import com.imdbselector.domain.exception.NoMatchingMediaException;
-import com.imdbselector.domain.model.MediaItem;
+import com.imdbselector.domain.valueobject.ImdbId;
+import com.imdbselector.domain.valueobject.SelectionMode;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.random.RandomGenerator;
 
 /**
- * Pure domain service that selects a random MediaItem from filtered candidates.
+ * Domain model representing the Cinema Roulette wheel that spins and picks a MediaItem.
  */
-public final class RandomMediaSelector {
+public final class CinemaRoulette {
     private final RandomGenerator random;
 
-    public RandomMediaSelector() {
+    public CinemaRoulette() {
         this(RandomGenerator.getDefault());
     }
 
-    public RandomMediaSelector(RandomGenerator random) {
+    public CinemaRoulette(RandomGenerator random) {
         this.random = Objects.requireNonNull(random, "random must not be null");
     }
 
-    public MediaItem select(List<MediaItem> candidates, SelectionMode mode) {
+    public MediaItem spin(List<MediaItem> candidates, SelectionMode mode) {
         if (candidates == null || candidates.isEmpty()) {
             throw new NoMatchingMediaException("No media items match the selected criteria");
         }
 
         List<MediaItem> pool = switch (mode) {
             case SelectionMode.Random() -> candidates;
-            case SelectionMode.NotSeen(var seenIds) -> candidates.stream()
+            case SelectionMode.NotSeen(Set<ImdbId> seenIds) -> candidates.stream()
                     .filter(item -> !seenIds.contains(item.imdbId()))
                     .toList();
         };

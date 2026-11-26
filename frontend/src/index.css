@@ -7,7 +7,7 @@
     background-color: #060110;
     background-image:
       radial-gradient(ellipse 36% 42% at 8% 24%, rgba(57, 255, 20, 0.16), transparent 72%),
-      radial-gradient(ellipse 46% 52% at 50% 32%, rgba(168, 85, 247, 0.36), transparent 70%),
+      radial-gradient(ellipse 34% 48% at 50% 32%, rgba(168, 85, 247, 0.34), transparent 68%),
       radial-gradient(ellipse 38% 45% at 92% 26%, rgba(255, 42, 133, 0.22), transparent 72%),
       radial-gradient(ellipse 34% 40% at 90% 58%, rgba(255, 107, 74, 0.16), transparent 72%),
       radial-gradient(ellipse 85% 85% at 50% 38%, #13042E 0%, #060110 78%);
@@ -25,10 +25,10 @@
   border-radius: 6px;
   box-shadow:
     0 0 10px rgba(217, 70, 239, 0.9),
-    0 -18px 65px rgba(168, 85, 247, 0.5),
-    0 18px 65px rgba(168, 85, 247, 0.5),
-    -24px 0 75px rgba(168, 85, 247, 0.55),
-    24px 0 75px rgba(217, 70, 239, 0.55),
+    0 -18px 60px rgba(168, 85, 247, 0.48),
+    0 18px 60px rgba(168, 85, 247, 0.48),
+    -12px 0 38px rgba(168, 85, 247, 0.4),
+    14px 0 44px rgba(217, 70, 239, 0.45),
     inset 0 0 22px rgba(168, 85, 247, 0.25);
 }
 
@@ -142,4 +142,198 @@
   background-size: 10px 32px;
   background-position: center;
   background-repeat: repeat-y;
+}
+
+.film-sprockets-x {
+  height: 12px;
+  background-color: #04000A;
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0px,
+    transparent 8px,
+    rgba(255, 42, 133, 0.45) 8px,
+    rgba(255, 42, 133, 0.45) 18px,
+    transparent 18px,
+    transparent 26px
+  );
+  background-size: 26px 6px;
+  background-position: center;
+  background-repeat: repeat-x;
+}
+
+.film-cell {
+  position: relative;
+  border: 1.5px solid rgba(255, 107, 74, 0.55);
+  background: linear-gradient(90deg, rgba(9, 1, 24, 0.96) 0%, rgba(28, 10, 12, 0.94) 100%);
+  border-radius: 4px;
+  overflow: hidden;
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+
+.film-cell-rail {
+  width: 14px;
+  flex-shrink: 0;
+  background-color: #030008;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 4px,
+    rgba(255, 107, 74, 0.65) 4px,
+    rgba(255, 107, 74, 0.65) 10px,
+    transparent 10px,
+    transparent 15px
+  );
+  background-size: 6px 15px;
+  background-position: center;
+  background-repeat: repeat-y;
+}
+
+.film-cell:hover {
+  border-color: #39FF14;
+}
+
+.film-cell-seen {
+  opacity: 0.68;
+  filter: saturate(0.75);
+  border-color: rgba(57, 255, 20, 0.4);
+}
+
+.ticket-stub {
+  position: relative;
+  background: #090118;
+  border-radius: 5px;
+}
+
+.ticket-perforation {
+  position: relative;
+  border-top: 2px dashed rgba(217, 70, 239, 0.55);
+}
+
+.ticket-perforation::before,
+.ticket-perforation::after {
+  content: '';
+  position: absolute;
+  top: -11px;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: #13052B;
+  border: 2px solid rgba(217, 70, 239, 0.65);
+}
+
+.ticket-perforation::before {
+  left: -30px;
+}
+
+.ticket-perforation::after {
+  right: -30px;
+}
+
+.casino-chip-green {
+  border: 2px solid #39FF14;
+  background: #39FF14;
+  color: #090118;
+  box-shadow:
+    0 0 12px rgba(57, 255, 20, 0.6),
+    inset 0 0 0 2px #090118,
+    inset 0 0 0 3.5px rgba(57, 255, 20, 0.85);
+}
+
+.casino-chip-pink {
+  border: 2px solid #FF1E8A;
+  background: #FF1E8A;
+  color: #ffffff;
+  box-shadow:
+    0 0 12px rgba(255, 30, 138, 0.65),
+    inset 0 0 0 2px #090118,
+    inset 0 0 0 3.5px rgba(255, 255, 255, 0.75);
+}
+
+.neon-curtains {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 55% 45% at 50% 88%, rgba(255, 0, 60, 0.24), transparent 72%);
+}
+
+@keyframes spotlight-sweep-left {
+  0%, 100% { transform: rotate(-34deg); opacity: 0.78; }
+  50% { transform: rotate(-22deg); opacity: 1; }
+}
+
+@keyframes spotlight-sweep-right {
+  0%, 100% { transform: rotate(34deg); opacity: 0.78; }
+  50% { transform: rotate(22deg); opacity: 1; }
+}
+
+.neon-spotlight-left,
+.neon-spotlight-right {
+  position: fixed;
+  top: -15px;
+  width: 30vw;
+  height: 120vh;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 0, 60, 0.45) 0%,
+    rgba(255, 30, 86, 0.16) 55%,
+    transparent 90%
+  );
+  clip-path: polygon(46% 0%, 54% 0%, 96% 100%, 4% 100%);
+  transform-origin: 50% 0%;
+  filter: blur(14px);
+}
+
+.neon-spotlight-left {
+  left: 2vw;
+  animation: spotlight-sweep-left 6.5s ease-in-out infinite;
+}
+
+.neon-spotlight-right {
+  right: 2vw;
+  animation: spotlight-sweep-right 6.5s ease-in-out infinite;
+}
+
+.neon-carpet-stage {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  perspective: 340px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.neon-carpet {
+  width: min(86vw, 440px);
+  height: 110%;
+  transform: rotateX(52deg);
+  transform-origin: bottom center;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.06) 0px,
+      rgba(255, 255, 255, 0.06) 2px,
+      transparent 2px,
+      transparent 44px
+    ),
+    linear-gradient(
+      90deg,
+      #FF1E56 0%,
+      #FF1E56 4%,
+      #590018 5%,
+      #B8002E 50%,
+      #590018 95%,
+      #FF1E56 96%,
+      #FF1E56 100%
+    );
+  border-left: 3px solid #FF4D6D;
+  border-right: 3px solid #FF4D6D;
+  box-shadow:
+    0 0 48px rgba(255, 0, 60, 0.85),
+    inset 0 0 36px rgba(255, 0, 60, 0.55);
 }

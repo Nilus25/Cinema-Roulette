@@ -106,7 +106,7 @@ public final class JooqMediaItemRepository implements MediaItemRepository {
 
     private MediaItem mapRecord(Record r, Set<Genre> genres) {
         Integer year = r.get(MEDIA_ITEMS.RELEASE_YEAR);
-        var rating = r.get(MEDIA_ITEMS.RATING);
+        java.math.BigDecimal rating = r.get(MEDIA_ITEMS.RATING);
         return new MediaItem(
                 new ImdbId(r.get(MEDIA_ITEMS.IMDB_ID)),
                 r.get(MEDIA_ITEMS.TITLE),

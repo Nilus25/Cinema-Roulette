@@ -36,6 +36,10 @@ dependencies {
     jooqCodegen("org.jooq:jooq-meta-extensions:3.19.18")
     jooqCodegen("com.h2database:h2:2.3.232")
 
+    // Auth & Security
+    implementation("com.auth0:java-jwt:4.5.0")
+    implementation("org.mindrot:jbcrypt:0.4")
+
     // CSV Parsing
     implementation("com.opencsv:opencsv:5.9")
 
@@ -73,7 +77,18 @@ tasks.compileJava {
 }
 
 application {
-    mainClass.set("com.imdbselector.infrastructure.adapter.in.http.AppServer")
+    mainClass.set(
+        providers.gradleProperty("mainClass")
+            .orElse("com.imdbselector.infrastructure.adapter.in.http.AppServer")
+    )
+}
+
+tasks.register<JavaExec>("migrateLegacy") {
+    group = "application"
+    description = "Migrates legacy JSON user and watchlist files into PostgreSQL"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("com.imdbselector.infrastructure.adapter.in.cli.LegacyJsonMigrator")
+    javaLauncher.set(javaToolchains.launcherFor(java.toolchain))
 }
 
 tasks.test {

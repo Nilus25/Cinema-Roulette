@@ -24,16 +24,33 @@ export interface UserDetailsResponse {
   seenItems: MediaItemResponse[];
 }
 
+export type WatchlistVisibility = 'PRIVATE' | 'SHARED' | 'PUBLIC';
+
 export interface WatchlistResponse {
   id: string;
   name: string;
   itemCount: number;
   updatedAt: string;
+  owned: boolean;
+  ownerName: string;
+  visibility: WatchlistVisibility;
+  shareCode: string | null;
 }
 
 export interface WatchlistItemResponse {
   item: MediaItemResponse;
   seen: boolean;
+}
+
+export interface WatchlistUpdatePreviewResponse {
+  added: MediaItemResponse[];
+  removed: MediaItemResponse[];
+}
+
+export interface WatchlistUpdateApplyOptions {
+  excludeAddedIds: string[];
+  keepRemovedIds: string[];
+  markSeenIds: string[];
 }
 
 export interface FilterMetadata {

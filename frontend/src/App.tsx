@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { Clapperboard } from 'lucide-react';
 import { api } from './api/client';
+import { AuthPanel } from './components/AuthPanel';
 import { FilterPanel } from './components/FilterPanel';
 import { PickCard } from './components/PickCard';
 import { ProfileBar } from './components/ProfileBar';
+import { UpdateDiffModal } from './components/UpdateDiffModal';
 import { WatchlistBar } from './components/WatchlistBar';
 import { WatchlistBrowser } from './components/WatchlistBrowser';
 import type {
@@ -12,9 +14,10 @@ import type {
   FilterState,
   MediaItemResponse,
   UserDetailsResponse,
-  UserResponse,
   WatchlistItemResponse,
   WatchlistResponse,
+  WatchlistUpdateApplyOptions,
+  WatchlistUpdatePreviewResponse,
 } from './types/api';
 
 const EMPTY_FILTER: FilterState = {
@@ -55,57 +58,104 @@ function mostFrequentGenre(items: MediaItemResponse[]): string | null {
   return top;
 }
 
+function loadStoredFilter(userId: string): FilterState {
+  try {
+    const raw = localStorage.getItem(`cr_filter_${userId}`);
+    if (!raw) return EMPTY_FILTER;
+    return { ...EMPTY_FILTER, ...JSON.parse(raw) };
+  } catch {
+    return EMPTY_FILTER;
+  }
+}
+
 export function App() {
+  const [authChecked, setAuthChecked] = useState(false);
+  const [userDetails, setUserDetails] = useState<UserDetailsResponse | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+
   const [metadata, setMetadata] = useState<FilterMetadata | null>(null);
-  const [users, setUsers] = useState<UserResponse[]>([]);
   const [watchlists, setWatchlists] = useState<WatchlistResponse[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [publicWatchlists, setPublicWatchlists] = useState<WatchlistResponse[]>([]);
   const [selectedWatchlistId, setSelectedWatchlistId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterState>(EMPTY_FILTER);
 
-  const [userDetails, setUserDetails] = useState<UserDetailsResponse | null>(null);
   const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState<MediaItemResponse | null>(null);
   const [picked, setPicked] = useState<MediaItemResponse | null>(null);
   const [items, setItems] = useState<WatchlistItemResponse[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [reelSpinning, setReelSpinning] = useState(false);
+  const [reelSpinKey, setReelSpinKey] = useState(0);
+  const [reelWinner, setReelWinner] = useState<MediaItemResponse | null>(null);
+  const [spinHistory, setSpinHistory] = useState<MediaItemResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [pendingUpdate, setPendingUpdate] = useState<{
+    watchlistId: string;
+    watchlistName: string;
+    file: File;
+    preview: WatchlistUpdatePreviewResponse;
+  } | null>(null);
+  const [applyingUpdate, setApplyingUpdate] = useState(false);
 
-  const refreshLists = useCallback(async () => {
-    const [u, w] = await Promise.all([api.listUsers(), api.listWatchlists()]);
-    setUsers(u);
-    setWatchlists(w);
+  const refreshWatchlists = useCallback(async () => {
+    const [accessible, pub] = await Promise.all([
+      api.listWatchlists(),
+      api.listPublicWatchlists(),
+    ]);
+    setWatchlists(accessible);
+    setPublicWatchlists(pub);
   }, []);
 
-  const refreshUserDetails = useCallback(async (userId: string | null) => {
-    if (!userId) {
-      setUserDetails(null);
-      setLastGeneratedPrompt(null);
+  const refreshMe = useCallback(async () => {
+    const me = await api.me();
+    setUserDetails(me);
+    setLastGeneratedPrompt(me.unseenLastGeneratedPrompt);
+  }, []);
+
+  useEffect(() => {
+    Promise.all([api.getFilterMetadata(), api.me().catch(() => null)])
+      .then(([meta, me]) => {
+        setMetadata(meta);
+        if (me) {
+          setUserDetails(me);
+          setFilter(loadStoredFilter(me.id));
+          setLastGeneratedPrompt(me.unseenLastGeneratedPrompt);
+          return refreshWatchlists();
+        }
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setAuthChecked(true));
+  }, [refreshWatchlists]);
+
+  useEffect(() => {
+    if (!userDetails) return;
+    localStorage.setItem(`cr_filter_${userDetails.id}`, JSON.stringify(filter));
+  }, [userDetails, filter]);
+
+  useEffect(() => {
+    if (!userDetails) return;
+    if (watchlists.length === 0) {
+      setSelectedWatchlistId(null);
       return;
     }
-    const details = await api.getUserDetails(userId);
-    setUserDetails(details);
-    setLastGeneratedPrompt(details.unseenLastGeneratedPrompt);
-  }, []);
-
-  useEffect(() => {
-    Promise.all([api.getFilterMetadata(), refreshLists()])
-      .then(([meta]) => setMetadata(meta))
-      .catch((e) => setError(e.message));
-  }, [refreshLists]);
-
-  useEffect(() => {
-    refreshUserDetails(selectedUserId).catch((e) => setError(e.message));
-  }, [selectedUserId, refreshUserDetails]);
+    const stillValid = selectedWatchlistId && watchlists.some((w) => w.id === selectedWatchlistId);
+    if (stillValid) {
+      localStorage.setItem(`cr_watchlist_${userDetails.id}`, selectedWatchlistId);
+      return;
+    }
+    const saved = localStorage.getItem(`cr_watchlist_${userDetails.id}`);
+    const match = saved ? watchlists.find((w) => w.id === saved) : null;
+    setSelectedWatchlistId(match ? match.id : watchlists[0].id);
+  }, [userDetails, watchlists, selectedWatchlistId]);
 
   const loadItems = useCallback(async () => {
-    if (!selectedWatchlistId) {
+    if (!userDetails || !selectedWatchlistId) {
       setItems([]);
       return;
     }
     setLoadingItems(true);
     try {
-      const data = await api.getWatchlistItems(selectedWatchlistId, filter, selectedUserId);
+      const data = await api.getWatchlistItems(selectedWatchlistId, filter);
       setItems(data);
       setError(null);
     } catch (e) {
@@ -113,7 +163,7 @@ export function App() {
     } finally {
       setLoadingItems(false);
     }
-  }, [selectedWatchlistId, filter, selectedUserId]);
+  }, [userDetails, selectedWatchlistId, filter]);
 
   useEffect(() => {
     loadItems();
@@ -129,11 +179,10 @@ export function App() {
   };
 
   const profileStats = useMemo(() => {
-    if (!userDetails) return null;
-    const seenInWatchlist = items.filter((i) => i.seen).length;
+    if (!userDetails) return { totalSeen: 0, seenInWatchlist: 0, watchlistTotal: 0, topGenre: null };
     return {
       totalSeen: userDetails.seenItems.length,
-      seenInWatchlist,
+      seenInWatchlist: items.filter((i) => i.seen).length,
       watchlistTotal: items.length,
       topGenre: mostFrequentGenre(userDetails.seenItems),
     };
@@ -151,6 +200,46 @@ export function App() {
     };
   }, [selectedWatchlistId, items]);
 
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm font-bold text-purple-200">
+        Loading Cinema Roulette...
+      </div>
+    );
+  }
+
+  if (!userDetails) {
+    return (
+      <AuthPanel
+        error={authError}
+        onLogin={async (username, password) => {
+          setAuthError(null);
+          try {
+            const me = await api.login(username, password);
+            setUserDetails(me);
+            setFilter(loadStoredFilter(me.id));
+            setLastGeneratedPrompt(me.unseenLastGeneratedPrompt);
+            await refreshWatchlists();
+          } catch (e) {
+            setAuthError((e as Error).message);
+          }
+        }}
+        onRegister={async (username, password) => {
+          setAuthError(null);
+          try {
+            const me = await api.register(username, password);
+            setUserDetails(me);
+            setFilter(loadStoredFilter(me.id));
+            setLastGeneratedPrompt(me.unseenLastGeneratedPrompt);
+            await refreshWatchlists();
+          } catch (e) {
+            setAuthError((e as Error).message);
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen pb-12">
       <div className="mx-auto max-w-[1680px] px-4 sm:px-6 lg:px-8 py-6 space-y-4">
@@ -160,35 +249,30 @@ export function App() {
           </div>
         )}
 
-        {/* 3-Column Uneven Desktop Layout with wide 1fr center */}
         <div className="grid grid-cols-1 lg:grid-cols-[270px_1fr_310px] gap-6 items-start">
-          {/* Left Column: Profile + Stats */}
+          {/* Left Column: Logged-in Profile + Stats */}
           <aside className="order-2 lg:order-1">
             <ProfileBar
-              users={users}
-              selectedUserId={selectedUserId}
-              onSelectUser={setSelectedUserId}
-              onCreateUser={(name) =>
+              username={userDetails.name}
+              onLogout={() =>
                 runAction(async () => {
-                  const created = await api.createUser(name);
-                  await refreshLists();
-                  setSelectedUserId(created.id);
-                })
-              }
-              onDeleteUser={(id) =>
-                runAction(async () => {
-                  await api.deleteUser(id);
-                  setSelectedUserId(null);
-                  await refreshLists();
+                  await api.logout();
+                  setUserDetails(null);
+                  setSelectedWatchlistId(null);
+                  setPicked(null);
+                  setSpinHistory([]);
+                  setReelWinner(null);
+                  setFilter(EMPTY_FILTER);
+                  setItems([]);
                 })
               }
               lastGeneratedPrompt={lastGeneratedPrompt}
+              recentSeen={userDetails.seenItems.slice(-5).reverse()}
               onMarkLastSeen={(imdbId) =>
                 runAction(async () => {
-                  if (!selectedUserId) return;
-                  await api.markSeen(selectedUserId, imdbId);
+                  await api.markSeen(imdbId);
                   setLastGeneratedPrompt(null);
-                  await Promise.all([refreshLists(), refreshUserDetails(selectedUserId), loadItems()]);
+                  await Promise.all([refreshMe(), loadItems()]);
                 })
               }
               onDismissPrompt={() => setLastGeneratedPrompt(null)}
@@ -196,7 +280,7 @@ export function App() {
             />
           </aside>
 
-          {/* Center Column: Unified Title + Filters + Picker Stage (1fr wide) */}
+          {/* Center Column: Unified Title + Filters + Picker Stage */}
           <main className="order-1 lg:order-2 min-w-0">
             <section className="neo-panel-purple flex overflow-hidden">
               <div className="filmstrip-rail hidden sm:block border-r-2 border-[#B5179E]/45" />
@@ -219,35 +303,63 @@ export function App() {
                   <FilterPanel
                     metadata={metadata}
                     filter={filter}
-                    hasUser={Boolean(selectedUserId)}
+                    hasUser={true}
                     onChange={setFilter}
                     onReset={() => setFilter(EMPTY_FILTER)}
                   />
 
                   <PickCard
                     canPick={Boolean(selectedWatchlistId)}
+                    candidates={items.map((row) => row.item)}
                     candidateCount={items.length}
                     loading={picking}
+                    spinning={reelSpinning}
+                    spinKey={reelSpinKey}
+                    reelWinner={reelWinner}
                     picked={picked}
-                    hasUser={Boolean(selectedUserId)}
+                    pickedIsSeen={Boolean(
+                      picked && userDetails.seenItems.some((s) => s.imdbId === picked.imdbId)
+                    )}
+                    spinHistory={spinHistory}
+                    hasUser={true}
                     onPick={() =>
                       runAction(async () => {
                         if (!selectedWatchlistId) return;
                         setPicking(true);
                         try {
-                          const result = await api.selectRandom(selectedWatchlistId, filter, selectedUserId);
-                          setPicked(result);
-                          fireRainbowConfetti();
+                          const result = await api.selectRandom(selectedWatchlistId, filter);
+                          setReelWinner(result);
+                          setReelSpinKey((k) => k + 1);
+                          setReelSpinning(true);
                         } finally {
                           setPicking(false);
                         }
                       })
                     }
-                    onMarkSeen={(imdbId) =>
+                    onSpinComplete={() => {
+                      setReelSpinning(false);
+                      if (reelWinner) {
+                        setPicked(reelWinner);
+                        setLastGeneratedPrompt(null);
+                        setSpinHistory((prev) => [
+                          reelWinner,
+                          ...prev.filter((item) => item.imdbId !== reelWinner.imdbId),
+                        ].slice(0, 5));
+                        fireRainbowConfetti();
+                      }
+                    }}
+                    onSelectFromHistory={(item) => {
+                      setReelSpinning(false);
+                      setPicked(item);
+                    }}
+                    onToggleSeen={(imdbId, currentlySeen) =>
                       runAction(async () => {
-                        if (!selectedUserId) return;
-                        await api.markSeen(selectedUserId, imdbId);
-                        await Promise.all([refreshLists(), refreshUserDetails(selectedUserId), loadItems()]);
+                        if (currentlySeen) {
+                          await api.unmarkSeen(imdbId);
+                        } else {
+                          await api.markSeen(imdbId);
+                        }
+                        await Promise.all([refreshMe(), loadItems()]);
                       })
                     }
                   />
@@ -261,19 +373,54 @@ export function App() {
           <aside className="order-3 space-y-4">
             <WatchlistBar
               watchlists={watchlists}
+              publicWatchlists={publicWatchlists}
               selectedWatchlistId={selectedWatchlistId}
               onSelectWatchlist={setSelectedWatchlistId}
               onImportWatchlist={(name, file) =>
                 runAction(async () => {
                   const created = await api.importWatchlist(name, file);
-                  await refreshLists();
+                  await refreshWatchlists();
                   setSelectedWatchlistId(created.id);
                 })
               }
               onUpdateWatchlistCsv={(id, file) =>
                 runAction(async () => {
-                  await api.updateWatchlistCsv(id, file);
-                  await Promise.all([refreshLists(), loadItems()]);
+                  const preview = await api.previewWatchlistCsv(id, file);
+                  const target = watchlists.find((w) => w.id === id);
+                  setPendingUpdate({
+                    watchlistId: id,
+                    watchlistName: target?.name ?? 'Watchlist',
+                    file,
+                    preview,
+                  });
+                })
+              }
+              onChangeVisibility={(id, visibility) =>
+                runAction(async () => {
+                  await api.changeVisibility(id, visibility);
+                  await refreshWatchlists();
+                })
+              }
+              onSubscribeByCode={(code) =>
+                runAction(async () => {
+                  await api.subscribeByCode(code);
+                  await refreshWatchlists();
+                })
+              }
+              onSubscribePublic={(id) =>
+                runAction(async () => {
+                  await api.subscribePublic(id);
+                  await refreshWatchlists();
+                })
+              }
+              onUnsubscribe={(id) =>
+                runAction(async () => {
+                  await api.unsubscribe(id);
+                  if (selectedWatchlistId === id) {
+                    setSelectedWatchlistId(null);
+                    setPicked(null);
+                  }
+                  await refreshWatchlists();
                 })
               }
               onDeleteWatchlist={(id) =>
@@ -281,7 +428,7 @@ export function App() {
                   await api.deleteWatchlist(id);
                   setSelectedWatchlistId(null);
                   setPicked(null);
-                  await refreshLists();
+                  await refreshWatchlists();
                 })
               }
               stats={watchlistStats}
@@ -290,17 +437,16 @@ export function App() {
             {selectedWatchlistId && (
               <WatchlistBrowser
                 items={items}
-                hasUser={Boolean(selectedUserId)}
+                hasUser={true}
                 loading={loadingItems}
                 onToggleSeen={(imdbId, currentlySeen) =>
                   runAction(async () => {
-                    if (!selectedUserId) return;
                     if (currentlySeen) {
-                      await api.unmarkSeen(selectedUserId, imdbId);
+                      await api.unmarkSeen(imdbId);
                     } else {
-                      await api.markSeen(selectedUserId, imdbId);
+                      await api.markSeen(imdbId);
                     }
-                    await Promise.all([refreshLists(), refreshUserDetails(selectedUserId), loadItems()]);
+                    await Promise.all([refreshMe(), loadItems()]);
                   })
                 }
               />
@@ -308,6 +454,28 @@ export function App() {
           </aside>
         </div>
       </div>
+
+      {pendingUpdate && (
+        <UpdateDiffModal
+          watchlistName={pendingUpdate.watchlistName}
+          fileName={pendingUpdate.file.name}
+          preview={pendingUpdate.preview}
+          busy={applyingUpdate}
+          onCancel={() => setPendingUpdate(null)}
+          onConfirm={async (options: WatchlistUpdateApplyOptions) => {
+            setApplyingUpdate(true);
+            try {
+              await api.updateWatchlistCsv(pendingUpdate.watchlistId, pendingUpdate.file, options);
+              setPendingUpdate(null);
+              await Promise.all([refreshWatchlists(), loadItems(), refreshMe()]);
+            } catch (e) {
+              setError((e as Error).message);
+            } finally {
+              setApplyingUpdate(false);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

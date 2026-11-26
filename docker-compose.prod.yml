@@ -1,0 +1,42 @@
+services:
+  postgres:
+    ports: !reset []
+    environment:
+      POSTGRES_DB: imdbselector
+      POSTGRES_USER: ${POSTGRES_USER:-imdb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+
+  backend:
+    ports: !reset []
+    environment:
+      APP_ENV: prod
+      COOKIE_SECURE: "true"
+      DB_URL: jdbc:postgresql://postgres:5432/imdbselector
+      DB_USER: ${POSTGRES_USER:-imdb}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN is required}
+
+  frontend:
+    ports: !reset []
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: imdbselector-caddy
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME:?DOMAIN_NAME is required}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

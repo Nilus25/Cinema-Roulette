@@ -10,11 +10,12 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Aggregate root representing a viewer profile and their seen-media history.
+ * Aggregate root representing a viewer account and their seen-media history.
  */
 public final class User {
     private final UserId id;
     private final String name;
+    private final String passwordHash;
     private final Set<ImdbId> seenMediaIds;
     private ImdbId lastGeneratedImdbId;
     private Instant lastGeneratedAt;
@@ -23,6 +24,7 @@ public final class User {
     public User(
             UserId id,
             String name,
+            String passwordHash,
             Set<ImdbId> seenMediaIds,
             ImdbId lastGeneratedImdbId,
             Instant lastGeneratedAt,
@@ -30,9 +32,10 @@ public final class User {
     ) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("User name must not be blank");
+            throw new IllegalArgumentException("Username must not be blank");
         }
         this.name = name.trim();
+        this.passwordHash = passwordHash;
         this.seenMediaIds = seenMediaIds == null ? new LinkedHashSet<>() : new LinkedHashSet<>(seenMediaIds);
         this.lastGeneratedImdbId = lastGeneratedImdbId;
         this.lastGeneratedAt = lastGeneratedAt;
@@ -40,7 +43,14 @@ public final class User {
     }
 
     public static User create(String name) {
-        return new User(UserId.random(), name, Set.of(), null, null, Instant.now());
+        return new User(UserId.random(), name, null, Set.of(), null, null, Instant.now());
+    }
+
+    public static User register(String name, String passwordHash) {
+        if (passwordHash == null || passwordHash.isBlank()) {
+            throw new IllegalArgumentException("passwordHash must not be blank");
+        }
+        return new User(UserId.random(), name, passwordHash, Set.of(), null, null, Instant.now());
     }
 
     public void markAsSeen(ImdbId imdbId) {
@@ -72,6 +82,10 @@ public final class User {
 
     public String name() {
         return name;
+    }
+
+    public String passwordHash() {
+        return passwordHash;
     }
 
     public Set<ImdbId> seenMediaIds() {
