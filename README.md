@@ -1,37 +1,77 @@
 # IMDBSelector
 
-## Description
-IMDBSelector is a personal app for managing IMDb watchlists and picking something to watch without spending half an hour scrolling.
+A personal movie and TV show watchlist manager and random-pick web application built around IMDb CSV exports.
 
-You can create profiles to keep track of what you've already seen, import watchlists from IMDb CSV exports, filter by genre, rating, year, media type, or keywords, and pick a random title (either from the whole filtered list or only from titles you haven't seen yet). It also remembers the last title it picked so you can mark it as seen next time you open it.
+## Why I Built This
 
-## Motivation
-I originally built this to solve my own boredom problem: my IMDb watchlist got so huge that I was spending more time deciding what to watch than actually watching anything.
+My IMDb watchlist grew so large that I was spending more time deciding what to watch than actually watching anything.
 
-It started as a quick Java 11 Swing desktop app with local JSON files, and I've since modernized it into a web app with a Java 25 backend, PostgreSQL, and a React frontend—both to use it from anywhere (including my phone) and to practice cleaner architecture and modern tooling.
+IMDBSelector started as a quick Java 11 Swing desktop app with local JSON files. I later modernized it into a decoupled web application to make it accessible from anywhere (including mobile) and to apply clean architecture, DDD, and modern Java/React practices. *(The original Swing version is preserved under the [`legacy-v1`](../../tree/legacy-v1) tag.)*
 
-## Requirements
+## Features
+
+- **User Profiles**: Create, load, and delete viewer profiles, each tracking seen titles and the last randomly picked title.
+- **IMDb CSV Import & Update**: Import watchlists from standard IMDb CSV exports and replace/update them cleanly.
+- **Filtering**: Filter by rating range (`0.0`–`10.0`), release year, genres, media types, title/director keywords, and **Not-Seen-Only** mode.
+- **Random Pick**: Pick a random matching title, open its IMDb page, and mark it as seen (or get prompted on next load if you watched your last pick).
+
+## Project Structure
+
+```text
+├── backend/            # Java 25, Javalin, jOOQ, Flyway, PostgreSQL (Hexagonal + DDD)
+├── frontend/           # React, TypeScript, Vite, Tailwind CSS
+├── documentation/      # Architecture diagrams (Mermaid) & roadmap
+├── docker-compose.yml  # Local PostgreSQL 17 setup
+└── GEMINI.md           # Project context & collaboration rules
+```
+
+## Getting Started
+
+### Prerequisites
+
 - **Docker** (for PostgreSQL)
-- **Java 25** (or Java 11+ with Gradle toolchain)
+- **Java 25** (or Java 11+ via Gradle toolchain)
 - **Node.js 20+**
 
-## Usage
+### Run Locally
 
 1. Start PostgreSQL:
+   ```sh
+   docker compose up -d
+   ```
+
+2. Start the backend (`http://localhost:8080`):
+   ```sh
+   ./backend/gradlew -p backend run
+   ```
+
+3. Start the frontend (`http://localhost:5173`):
+   ```sh
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+<details>
+<summary>Optional: Migrate legacy JSON files</summary>
+
+If you have legacy `*_user.json` and `*_watchlist.json` files under `data/`:
 ```sh
-docker compose up -d
+./backend/gradlew -p backend run -PmainClass=com.imdbselector.infrastructure.adapter.in.cli.LegacyJsonMigrator
 ```
 
-2. Start the backend:
+</details>
+
+## Testing
+
 ```sh
-./backend/gradlew -p backend run
+# Backend unit, HTTP, CSV, and ArchUnit architecture tests
+./backend/gradlew -p backend test
+
+# Frontend typecheck and production build
+cd frontend && npm run build
 ```
 
-3. Start the frontend:
-```sh
-cd frontend
-npm install
-npm run dev
-```
+## License
 
-*(If you have legacy `*_user.json` and `*_watchlist.json` files under `data/`, you can import them with `./backend/gradlew -p backend run -PmainClass=com.imdbselector.infrastructure.adapter.in.cli.LegacyJsonMigrator`.)*
+See [LICENCE](LICENCE).
