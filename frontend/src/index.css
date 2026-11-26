@@ -2,99 +2,88 @@
 
 @layer base {
   body {
-    font-family: 'Nunito', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     min-height: 100vh;
-    background:
-      linear-gradient(180deg,
-        #38BDF8 0%,
-        #7DD3FC 46%,
-        #BAE6FD 64%,
-        #84F527 80%,
-        #39E600 100%);
+    background-color: #090118;
+    background-image:
+      radial-gradient(ellipse 75% 45% at 15% 0%, rgba(168, 85, 247, 0.35), transparent),
+      radial-gradient(ellipse 65% 45% at 88% 10%, rgba(255, 30, 138, 0.25), transparent),
+      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(57, 255, 20, 0.14), transparent);
     background-attachment: fixed;
   }
 
   h1, h2, h3, .font-display {
-    font-family: 'Fredoka', system-ui, sans-serif;
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
   }
 }
 
-/* Whimsical Y2K rainbow ribbon */
-.rainbow-bar {
-  background: linear-gradient(90deg, #FF3B6B, #FF8C42, #FFE600, #39FF14, #00E5FF, #A855F7, #FF49B0);
+.rainbow-ribbon {
+  background: linear-gradient(90deg, #FF1E56, #FF7A00, #FFE600, #39FF14, #00E5FF, #9D4EDD, #FF1E8A);
 }
 
-/* Glossy Frutiger-Aero glass card */
-.aero-card {
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(14px);
-  border: 3px solid rgba(255, 255, 255, 0.95);
+/* Neo-Brutalist 90s Neon Panel: crisp 6px corners, glowing border + hard offset shadow */
+.neo-panel-purple {
+  background: #14062B;
+  border: 2px solid #B5179E;
+  border-radius: 6px;
   box-shadow:
-    0 14px 32px -10px rgba(30, 58, 138, 0.28),
-    inset 0 2px 0 rgba(255, 255, 255, 0.9);
+    5px 5px 0px #7B2CBF,
+    0 0 22px rgba(181, 23, 158, 0.35);
 }
 
-/* Glossy 3D Y2K gel button */
-.gel-btn-green {
-  background: linear-gradient(180deg, #8CFF57 0%, #39FF14 55%, #16C60C 100%);
-  border: 3px solid #0E7C08;
-  color: #052E03;
+.neo-panel-green {
+  background: #14062B;
+  border: 2px solid #39FF14;
+  border-radius: 6px;
   box-shadow:
-    0 6px 0 #0E7C08,
-    0 12px 24px rgba(57, 255, 20, 0.45),
-    inset 0 3px 4px rgba(255, 255, 255, 0.85);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+    5px 5px 0px #16A34A,
+    0 0 18px rgba(57, 255, 20, 0.28);
 }
 
-.gel-btn-green:hover:not(:disabled) {
-  transform: translateY(-2px);
+.neo-panel-pink {
+  background: #14062B;
+  border: 2px solid #FF1E8A;
+  border-radius: 6px;
   box-shadow:
-    0 8px 0 #0E7C08,
-    0 16px 30px rgba(57, 255, 20, 0.65),
-    inset 0 3px 6px rgba(255, 255, 255, 0.95);
+    5px 5px 0px #FF7A00,
+    0 0 18px rgba(255, 30, 138, 0.3);
 }
 
-.gel-btn-green:active:not(:disabled) {
-  transform: translateY(4px);
+.neo-btn-primary {
+  background: #39FF14;
+  color: #090118;
+  border: 2px solid #090118;
+  border-radius: 6px;
   box-shadow:
-    0 2px 0 #0E7C08,
-    0 6px 12px rgba(57, 255, 20, 0.4),
-    inset 0 3px 4px rgba(255, 255, 255, 0.7);
+    5px 5px 0px #FF1E8A,
+    0 0 24px rgba(57, 255, 20, 0.65);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 
-.gel-btn-green:disabled {
-  opacity: 0.45;
+.neo-btn-primary:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow:
+    7px 7px 0px #FF1E8A,
+    0 0 32px rgba(57, 255, 20, 0.85);
+}
+
+.neo-btn-primary:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow:
+    2px 2px 0px #FF1E8A,
+    0 0 16px rgba(57, 255, 20, 0.7);
+}
+
+.neo-btn-primary:disabled {
+  opacity: 0.4;
   box-shadow: none;
 }
 
-/* Floating soap bubbles */
-@keyframes float-bubble {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-14px) scale(1.03); }
+@keyframes pop-card {
+  0% { transform: translateY(8px) scale(0.97); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-.soap-bubble {
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle at 30% 28%,
-    rgba(255, 255, 255, 0.85) 0%,
-    rgba(255, 255, 255, 0.22) 35%,
-    rgba(168, 85, 247, 0.14) 70%,
-    rgba(57, 255, 20, 0.18) 100%
-  );
-  border: 2px solid rgba(255, 255, 255, 0.75);
-  box-shadow:
-    inset -6px -8px 16px rgba(255, 255, 255, 0.45),
-    0 8px 24px rgba(56, 189, 248, 0.25);
-  animation: float-bubble 6s ease-in-out infinite;
-}
-
-@keyframes pop-in {
-  0% { transform: scale(0.88) rotate(-1.5deg); opacity: 0; }
-  65% { transform: scale(1.03) rotate(0.8deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-
-.animate-pop-in {
-  animation: pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+.animate-pop-card {
+  animation: pop-card 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }

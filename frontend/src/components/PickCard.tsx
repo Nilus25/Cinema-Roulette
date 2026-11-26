@@ -19,37 +19,37 @@ export function PickCard({ canPick, loading, picked, hasUser, onPick, onMarkSeen
         type="button"
         disabled={!canPick || loading}
         onClick={onPick}
-        className="gel-btn-green flex w-full items-center justify-center gap-3 rounded-full px-6 py-4 font-display text-lg font-bold tracking-wide disabled:cursor-not-allowed"
+        className="neo-btn-primary flex w-full items-center justify-center gap-3 px-6 py-4 font-display text-lg font-extrabold tracking-wide disabled:cursor-not-allowed"
       >
         <Dices className={`h-6 w-6 ${loading ? 'animate-spin' : ''}`} />
-        <span>{loading ? 'Rolling the Rainbow...' : 'Roll the Pick!'}</span>
+        <span>{loading ? 'Rolling...' : 'Roll the Pick!'}</span>
       </button>
 
       {picked && (
         <div
           key={picked.imdbId}
-          className="animate-pop-in overflow-hidden rounded-3xl border-3 border-purple-500 bg-white shadow-[0_14px_30px_rgba(168,85,247,0.28)]"
+          className="animate-pop-card overflow-hidden rounded-md border-2 border-[#39FF14] bg-[#090118] shadow-[5px_5px_0px_#9D4EDD,0_0_24px_rgba(57,255,20,0.3)]"
         >
-          <div className="rainbow-bar h-2 w-full" />
+          <div className="rainbow-ribbon h-2 w-full" />
           <div className="p-5 space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1.5">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-3 py-0.5 text-xs font-extrabold text-purple-700">
+                <div className="inline-flex items-center gap-1.5 rounded border border-[#FF1E8A] bg-[#FF1E8A]/20 px-2.5 py-0.5 text-xs font-bold text-[#FF72B6]">
                   {isSeries ? <Tv className="h-3.5 w-3.5" /> : <Film className="h-3.5 w-3.5" />}
                   <span>{picked.mediaType}</span>
                   {picked.releaseYear && <span>• {picked.releaseYear}</span>}
                 </div>
-                <h3 className="font-display text-2xl font-bold text-slate-900 leading-tight">
+                <h3 className="font-display text-2xl font-extrabold text-[#39FF14] drop-shadow-[0_0_12px_rgba(57,255,20,0.55)]">
                   {picked.title}
                 </h3>
                 {picked.director && (
-                  <p className="text-xs font-semibold text-slate-500">Directed by {picked.director}</p>
+                  <p className="text-xs font-semibold text-purple-200/85">Directed by {picked.director}</p>
                 )}
               </div>
 
               {picked.rating !== null && (
-                <div className="flex shrink-0 items-center gap-1 rounded-2xl border-2 border-orange-400 bg-gradient-to-b from-amber-300 to-orange-400 px-3 py-1.5 text-sm font-extrabold text-orange-950 shadow-sm">
-                  <Star className="h-4 w-4 fill-orange-950" />
+                <div className="flex shrink-0 items-center gap-1 rounded border-2 border-[#FF7A00] bg-[#FF7A00] px-3 py-1 text-sm font-extrabold text-[#090118] shadow-[3px_3px_0px_#FFE600]">
+                  <Star className="h-4 w-4 fill-[#090118]" />
                   <span>{picked.rating}</span>
                 </div>
               )}
@@ -60,7 +60,7 @@ export function PickCard({ canPick, loading, picked, hasUser, onPick, onMarkSeen
                 {picked.genres.map((g) => (
                   <span
                     key={g}
-                    className="rounded-full border border-pink-300 bg-pink-50 px-3 py-0.5 text-xs font-bold text-[#D91B7A]"
+                    className="rounded border border-purple-400/60 bg-[#1B0938] px-2.5 py-0.5 text-xs font-semibold text-purple-100"
                   >
                     {g}
                   </span>
@@ -68,12 +68,12 @@ export function PickCard({ canPick, loading, picked, hasUser, onPick, onMarkSeen
               </div>
             )}
 
-            <div className="flex flex-wrap gap-2.5 pt-1">
+            <div className="flex flex-wrap gap-3 pt-1">
               <a
                 href={picked.imdbUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-purple-500 bg-purple-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-purple-500 active:scale-95"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded border-2 border-[#FF7A00] bg-[#14062B] px-4 py-2.5 text-xs font-extrabold text-[#FF9E44] transition hover:bg-[#FF7A00] hover:text-[#090118]"
               >
                 <span>Open IMDb</span>
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -82,7 +82,7 @@ export function PickCard({ canPick, loading, picked, hasUser, onPick, onMarkSeen
                 <button
                   type="button"
                   onClick={() => onMarkSeen(picked.imdbId)}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-green-600 bg-[#39FF14] px-4 py-2.5 text-xs font-extrabold text-green-950 shadow-sm transition hover:brightness-105 active:scale-95"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded border-2 border-[#39FF14] bg-[#39FF14]/15 px-4 py-2.5 text-xs font-extrabold text-[#39FF14] transition hover:bg-[#39FF14] hover:text-[#090118]"
                 >
                   <Check className="h-4 w-4" />
                   <span>Mark as Seen</span>

@@ -29,10 +29,10 @@ const EMPTY_FILTER: FilterState = {
 
 function fireRainbowConfetti() {
   confetti({
-    particleCount: 70,
-    spread: 80,
+    particleCount: 75,
+    spread: 85,
     origin: { y: 0.6 },
-    colors: ['#FF3B6B', '#FF8C42', '#FFE600', '#39FF14', '#00E5FF', '#A855F7', '#FF49B0'],
+    colors: ['#FF1E56', '#FF7A00', '#FFE600', '#39FF14', '#00E5FF', '#9D4EDD', '#FF1E8A'],
   });
 }
 
@@ -105,35 +105,27 @@ export function App() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden pb-12">
-      {/* Top Rainbow Ribbon */}
-      <div className="rainbow-bar h-2.5 w-full shadow-md" />
+    <div className="min-h-screen pb-12">
+      <div className="rainbow-ribbon h-2 w-full" />
 
-      {/* Decorative Floating Soap Bubbles */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="soap-bubble absolute -top-10 -right-10 h-44 w-44 opacity-80" />
-        <div className="soap-bubble absolute top-1/3 -left-12 h-32 w-32 opacity-70" style={{ animationDelay: '1.5s' }} />
-        <div className="soap-bubble absolute bottom-8 right-6 h-24 w-24 opacity-75" style={{ animationDelay: '3s' }} />
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-3xl px-4 py-6 sm:py-8 space-y-5">
-        {/* Whimsical Header */}
-        <header className="aero-card flex items-center justify-between rounded-full px-5 py-3">
+      <div className="mx-auto max-w-3xl px-4 py-6 space-y-5">
+        {/* Header */}
+        <header className="neo-panel-purple flex items-center justify-between px-4 py-3.5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#FF49B0] via-purple-500 to-[#39FF14] text-white shadow-md">
+            <div className="flex h-10 w-10 items-center justify-center rounded border-2 border-[#39FF14] bg-[#090118] text-[#39FF14] shadow-[0_0_14px_rgba(57,255,20,0.45)]">
               <Clapperboard className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="font-display text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-700 via-[#FF2A85] to-orange-500 bg-clip-text text-transparent">
+              <h1 className="font-display text-2xl font-extrabold tracking-tight text-[#39FF14] drop-shadow-[0_0_10px_rgba(57,255,20,0.6)]">
                 IMDBSelector
               </h1>
-              <p className="text-xs font-bold text-sky-600">Pick something fun without the scroll</p>
+              <p className="text-xs font-semibold text-[#FF8DC7]">Zero-scroll watchlist randomizer</p>
             </div>
           </div>
         </header>
 
         {error && (
-          <div className="animate-pop-in rounded-3xl border-3 border-rose-400 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600 shadow-md">
+          <div className="rounded border-2 border-[#FF2E54] bg-[#290510] px-4 py-3 text-xs font-bold text-rose-200 shadow-[4px_4px_0px_#FF2E54]">
             {error}
           </div>
         )}
@@ -198,8 +190,8 @@ export function App() {
           />
         </div>
 
-        {/* Zone 2: Centerpiece "The Picker" Stage */}
-        <section className="aero-card rounded-[2rem] p-5 space-y-5">
+        {/* Zone 2: Picker Stage */}
+        <section className="neo-panel-purple p-5 space-y-5">
           <FilterPanel
             metadata={metadata}
             filter={filter}
