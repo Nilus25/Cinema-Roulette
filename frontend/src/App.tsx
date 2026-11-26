@@ -207,10 +207,10 @@ export function App() {
                   </div>
                   <div>
                     <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-[#39FF14] drop-shadow-[0_0_12px_rgba(57,255,20,0.55)]">
-                      IMDBSelector
+                      Cinema Roulette
                     </h1>
                     <p className="text-xs font-semibold text-[#FF8DC7]">
-                      Pick something to watch without the endless scroll
+                      Spin your watchlist. Watch something already.
                     </p>
                   </div>
                 </header>
