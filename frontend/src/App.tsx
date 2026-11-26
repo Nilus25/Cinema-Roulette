@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { Clapperboard } from 'lucide-react';
+import { Clapperboard, Dices } from 'lucide-react';
 import { api } from './api/client';
 import { FilterPanel } from './components/FilterPanel';
 import { PickCard } from './components/PickCard';
@@ -29,10 +29,10 @@ const EMPTY_FILTER: FilterState = {
 
 function fireRainbowConfetti() {
   confetti({
-    particleCount: 70,
-    spread: 80,
+    particleCount: 75,
+    spread: 85,
     origin: { y: 0.6 },
-    colors: ['#FF3B6B', '#FF8C42', '#FFE600', '#39FF14', '#00E5FF', '#A855F7', '#FF49B0'],
+    colors: ['#FF0055', '#FF6B00', '#FFE600', '#39FF14', '#00E5FF', '#9D4EDD', '#FF0099'],
   });
 }
 
@@ -105,40 +105,40 @@ export function App() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden pb-12">
-      {/* Top Rainbow Ribbon */}
-      <div className="rainbow-bar h-2.5 w-full shadow-md" />
+    <div className="min-h-screen pb-10">
+      <div className="rainbow-strip h-2 w-full" />
 
-      {/* Decorative Floating Soap Bubbles */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="soap-bubble absolute -top-10 -right-10 h-44 w-44 opacity-80" />
-        <div className="soap-bubble absolute top-1/3 -left-12 h-32 w-32 opacity-70" style={{ animationDelay: '1.5s' }} />
-        <div className="soap-bubble absolute bottom-8 right-6 h-24 w-24 opacity-75" style={{ animationDelay: '3s' }} />
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-3xl px-4 py-6 sm:py-8 space-y-5">
-        {/* Whimsical Header */}
-        <header className="aero-card flex items-center justify-between rounded-full px-5 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#FF49B0] via-purple-500 to-[#39FF14] text-white shadow-md">
-              <Clapperboard className="h-5 w-5" />
+      <div className="mx-auto max-w-3xl px-4 py-5 space-y-4">
+        {/* 90s Swing JFrame Main Header */}
+        <header className="swing-window">
+          <div className="swing-titlebar-purple flex items-center justify-between px-3 py-1.5 text-white">
+            <div className="flex items-center gap-2 font-display text-xs font-bold uppercase">
+              <Clapperboard className="h-4 w-4 text-[#39FF14]" />
+              <span>IMDBSelector.exe</span>
             </div>
-            <div>
-              <h1 className="font-display text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-700 via-[#FF2A85] to-orange-500 bg-clip-text text-transparent">
-                IMDBSelector
-              </h1>
-              <p className="text-xs font-bold text-sky-600">Pick something fun without the scroll</p>
+            <div className="flex gap-1 text-[10px] font-bold">
+              <span className="swing-btn bg-[#2B0F54] px-1.5">_</span>
+              <span className="swing-btn bg-[#2B0F54] px-1.5">[]</span>
+              <span className="swing-btn bg-[#FF0080] px-1.5">X</span>
             </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+            <h1 className="font-display text-xl sm:text-2xl font-bold text-[#39FF14] drop-shadow-[0_0_12px_rgba(57,255,20,0.7)]">
+              IMDBSELECTOR
+            </h1>
+            <span className="border border-[#FF0080] bg-[#FF0080]/20 px-2.5 py-0.5 text-[11px] font-bold uppercase text-[#FF6BB0]">
+              90s Neon Edition
+            </span>
           </div>
         </header>
 
         {error && (
-          <div className="animate-pop-in rounded-3xl border-3 border-rose-400 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600 shadow-md">
-            {error}
+          <div className="swing-window border-[#FF1E56] bg-[#2B0410] px-4 py-2.5 text-xs font-bold text-[#FF8CA0]">
+            ERROR: {error}
           </div>
         )}
 
-        {/* Zone 1: Profile & Watchlist */}
+        {/* Zone 1: Profile & Watchlist Windows */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ProfileBar
             users={users}
@@ -198,42 +198,48 @@ export function App() {
           />
         </div>
 
-        {/* Zone 2: Centerpiece "The Picker" Stage */}
-        <section className="aero-card rounded-[2rem] p-5 space-y-5">
-          <FilterPanel
-            metadata={metadata}
-            filter={filter}
-            hasUser={Boolean(selectedUserId)}
-            onChange={setFilter}
-            onReset={() => setFilter(EMPTY_FILTER)}
-          />
+        {/* Zone 2: Picker Window */}
+        <section className="swing-window">
+          <div className="swing-titlebar-purple flex items-center gap-2 px-3 py-1.5 font-display text-xs font-bold uppercase text-white">
+            <Dices className="h-3.5 w-3.5 text-[#39FF14]" />
+            <span>Random_Picker_Panel</span>
+          </div>
+          <div className="p-4 space-y-4">
+            <FilterPanel
+              metadata={metadata}
+              filter={filter}
+              hasUser={Boolean(selectedUserId)}
+              onChange={setFilter}
+              onReset={() => setFilter(EMPTY_FILTER)}
+            />
 
-          <PickCard
-            canPick={Boolean(selectedWatchlistId)}
-            loading={picking}
-            picked={picked}
-            hasUser={Boolean(selectedUserId)}
-            onPick={() =>
-              runAction(async () => {
-                if (!selectedWatchlistId) return;
-                setPicking(true);
-                try {
-                  const result = await api.selectRandom(selectedWatchlistId, filter, selectedUserId);
-                  setPicked(result);
-                  fireRainbowConfetti();
-                } finally {
-                  setPicking(false);
-                }
-              })
-            }
-            onMarkSeen={(imdbId) =>
-              runAction(async () => {
-                if (!selectedUserId) return;
-                await api.markSeen(selectedUserId, imdbId);
-                await Promise.all([refreshLists(), loadItems()]);
-              })
-            }
-          />
+            <PickCard
+              canPick={Boolean(selectedWatchlistId)}
+              loading={picking}
+              picked={picked}
+              hasUser={Boolean(selectedUserId)}
+              onPick={() =>
+                runAction(async () => {
+                  if (!selectedWatchlistId) return;
+                  setPicking(true);
+                  try {
+                    const result = await api.selectRandom(selectedWatchlistId, filter, selectedUserId);
+                    setPicked(result);
+                    fireRainbowConfetti();
+                  } finally {
+                    setPicking(false);
+                  }
+                })
+              }
+              onMarkSeen={(imdbId) =>
+                runAction(async () => {
+                  if (!selectedUserId) return;
+                  await api.markSeen(selectedUserId, imdbId);
+                  await Promise.all([refreshLists(), loadItems()]);
+                })
+              }
+            />
+          </div>
         </section>
 
         {/* Zone 3: Watchlist Vault */}

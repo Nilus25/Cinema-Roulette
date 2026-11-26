@@ -42,94 +42,94 @@ export function WatchlistBar({
   };
 
   return (
-    <div className="aero-card rounded-3xl p-4 space-y-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 font-display text-sm font-bold text-[#D91B7A]">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FF49B0] text-white shadow-sm">
-            <Film className="h-4 w-4" />
-          </span>
-          <span>Watchlist</span>
+    <div className="swing-window">
+      <div className="swing-titlebar-pink flex items-center justify-between px-2.5 py-1.5 text-white">
+        <div className="flex items-center gap-1.5 font-display text-xs font-bold uppercase">
+          <Film className="h-3.5 w-3.5" />
+          <span>Watchlist.csv</span>
         </div>
         <button
           type="button"
           onClick={() => setImporting((v) => !v)}
-          className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#FF49B0] to-[#FF8C42] px-3 py-1 text-xs font-bold text-white shadow-sm transition hover:brightness-110 active:scale-95"
+          className="swing-btn inline-flex items-center gap-1 bg-[#1B0938] px-2 py-0.5 text-[10px] font-bold uppercase text-[#FF6B00]"
         >
-          {importing ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-          <span>{importing ? 'Cancel' : 'Import CSV'}</span>
+          {importing ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+          <span>{importing ? 'Close' : 'Import'}</span>
         </button>
       </div>
 
-      {importing && (
-        <form onSubmit={handleImport} className="space-y-2 rounded-2xl border-2 border-pink-200 bg-white/90 p-3">
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Watchlist name..."
-            className="w-full rounded-xl border-2 border-purple-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:border-[#FF49B0] focus:outline-none"
-          />
-          <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-pink-300 bg-pink-50/70 px-3 py-2.5 text-xs font-bold text-[#D91B7A] hover:bg-pink-100/70">
-            <Upload className="h-4 w-4" />
-            <span className="truncate">{newFile ? newFile.name : 'Choose IMDb CSV file...'}</span>
+      <div className="p-3 space-y-2.5">
+        {importing && (
+          <form onSubmit={handleImport} className="swing-inset space-y-2 p-2.5">
             <input
-              type="file"
-              accept=".csv,text/csv"
-              onChange={(e) => setNewFile(e.target.files?.[0] ?? null)}
-              className="hidden"
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="WATCHLIST NAME..."
+              className="swing-inset w-full px-2.5 py-1.5 text-xs text-slate-100 placeholder-purple-400/50 focus:outline-none"
             />
-          </label>
-          <button
-            type="submit"
-            disabled={!newName.trim() || !newFile}
-            className="w-full rounded-xl bg-gradient-to-r from-[#FF49B0] to-[#FF8C42] px-3 py-2 text-xs font-extrabold text-white shadow-sm hover:brightness-110 disabled:opacity-40"
-          >
-            Upload Watchlist
-          </button>
-        </form>
-      )}
-
-      <div className="flex flex-wrap gap-2">
-        <select
-          value={selectedWatchlistId ?? ''}
-          onChange={(e) => onSelectWatchlist(e.target.value || null)}
-          className="min-w-[160px] flex-1 rounded-2xl border-2 border-pink-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-800 focus:border-[#FF49B0] focus:outline-none"
-        >
-          <option value="">Pick a watchlist...</option>
-          {watchlists.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name} ({w.itemCount})
-            </option>
-          ))}
-        </select>
-        {selectedWatchlistId && (
-          <>
-            <input
-              ref={updateInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              onChange={handleUpdateFile}
-              className="hidden"
-            />
+            <label className="swing-btn flex cursor-pointer items-center justify-center gap-2 bg-[#2B0F54] px-3 py-1.5 text-xs font-bold uppercase text-[#FFE600]">
+              <Upload className="h-3.5 w-3.5" />
+              <span className="truncate">{newFile ? newFile.name : 'BROWSE CSV...'}</span>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => setNewFile(e.target.files?.[0] ?? null)}
+                className="hidden"
+              />
+            </label>
             <button
-              type="button"
-              onClick={() => updateInputRef.current?.click()}
-              title="Update watchlist from CSV"
-              className="inline-flex items-center gap-1.5 rounded-2xl border-2 border-orange-300 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600 transition hover:bg-orange-400 hover:text-white"
+              type="submit"
+              disabled={!newName.trim() || !newFile}
+              className="swing-btn w-full bg-[#FF0080] px-3 py-1.5 text-xs font-bold uppercase text-white disabled:opacity-40"
             >
-              <RefreshCw className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">CSV</span>
+              Upload
             </button>
-            <button
-              type="button"
-              onClick={() => onDeleteWatchlist(selectedWatchlistId)}
-              title="Delete watchlist"
-              className="inline-flex items-center justify-center rounded-2xl border-2 border-rose-300 bg-rose-50 px-3 py-2 text-rose-500 transition hover:bg-rose-500 hover:text-white"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </>
+          </form>
         )}
+
+        <div className="flex flex-wrap gap-2">
+          <select
+            value={selectedWatchlistId ?? ''}
+            onChange={(e) => onSelectWatchlist(e.target.value || null)}
+            className="swing-inset min-w-[160px] flex-1 px-2.5 py-2 text-xs text-slate-100 focus:outline-none"
+          >
+            <option value="">-- SELECT WATCHLIST --</option>
+            {watchlists.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name} ({w.itemCount})
+              </option>
+            ))}
+          </select>
+          {selectedWatchlistId && (
+            <>
+              <input
+                ref={updateInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleUpdateFile}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => updateInputRef.current?.click()}
+                title="Update watchlist from CSV"
+                className="swing-btn inline-flex items-center gap-1 bg-[#FF6B00] px-2.5 py-2 text-xs font-bold uppercase text-black"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">CSV</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onDeleteWatchlist(selectedWatchlistId)}
+                title="Delete watchlist"
+                className="swing-btn inline-flex items-center justify-center bg-[#FF1E56] px-2.5 py-2 text-white"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

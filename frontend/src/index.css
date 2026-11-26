@@ -2,99 +2,101 @@
 
 @layer base {
   body {
-    font-family: 'Nunito', system-ui, sans-serif;
+    font-family: 'Space Mono', monospace;
     min-height: 100vh;
-    background:
-      linear-gradient(180deg,
-        #38BDF8 0%,
-        #7DD3FC 46%,
-        #BAE6FD 64%,
-        #84F527 80%,
-        #39E600 100%);
+    background-color: #120428;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(255, 0, 153, 0.25), transparent 40%),
+      radial-gradient(circle at 85% 75%, rgba(57, 255, 20, 0.2), transparent 45%),
+      linear-gradient(rgba(168, 85, 247, 0.14) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(168, 85, 247, 0.14) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
     background-attachment: fixed;
   }
 
   h1, h2, h3, .font-display {
-    font-family: 'Fredoka', system-ui, sans-serif;
+    font-family: 'Silkscreen', monospace;
   }
 }
 
-/* Whimsical Y2K rainbow ribbon */
-.rainbow-bar {
-  background: linear-gradient(90deg, #FF3B6B, #FF8C42, #FFE600, #39FF14, #00E5FF, #A855F7, #FF49B0);
-}
-
-/* Glossy Frutiger-Aero glass card */
-.aero-card {
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(14px);
-  border: 3px solid rgba(255, 255, 255, 0.95);
+/* 90s Java Swing / Win95 raised window panel */
+.swing-window {
+  background: #1B0938;
+  border-top: 3px solid #D96BFF;
+  border-left: 3px solid #D96BFF;
+  border-right: 3px solid #090114;
+  border-bottom: 3px solid #090114;
   box-shadow:
-    0 14px 32px -10px rgba(30, 58, 138, 0.28),
-    inset 0 2px 0 rgba(255, 255, 255, 0.9);
+    6px 6px 0px #06010D,
+    0 0 18px rgba(168, 85, 247, 0.45);
 }
 
-/* Glossy 3D Y2K gel button */
-.gel-btn-green {
-  background: linear-gradient(180deg, #8CFF57 0%, #39FF14 55%, #16C60C 100%);
-  border: 3px solid #0E7C08;
-  color: #052E03;
-  box-shadow:
-    0 6px 0 #0E7C08,
-    0 12px 24px rgba(57, 255, 20, 0.45),
-    inset 0 3px 4px rgba(255, 255, 255, 0.85);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+/* Swing / Win95 recessed input/list well */
+.swing-inset {
+  background: #0B021A;
+  border-top: 2px solid #05000D;
+  border-left: 2px solid #05000D;
+  border-right: 2px solid #8A3FFC;
+  border-bottom: 2px solid #8A3FFC;
 }
 
-.gel-btn-green:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow:
-    0 8px 0 #0E7C08,
-    0 16px 30px rgba(57, 255, 20, 0.65),
-    inset 0 3px 6px rgba(255, 255, 255, 0.95);
+/* Classic 90s gradient window titlebar */
+.swing-titlebar-purple {
+  background: linear-gradient(90deg, #7B2CBF 0%, #FF0080 65%, #FF6B00 100%);
 }
 
-.gel-btn-green:active:not(:disabled) {
-  transform: translateY(4px);
-  box-shadow:
-    0 2px 0 #0E7C08,
-    0 6px 12px rgba(57, 255, 20, 0.4),
-    inset 0 3px 4px rgba(255, 255, 255, 0.7);
+.swing-titlebar-green {
+  background: linear-gradient(90deg, #00B300 0%, #39FF14 60%, #FFE600 100%);
 }
 
-.gel-btn-green:disabled {
-  opacity: 0.45;
+.swing-titlebar-pink {
+  background: linear-gradient(90deg, #FF007F 0%, #B5179E 60%, #7209B7 100%);
+}
+
+/* Tactile 90s Swing raised button */
+.swing-btn {
+  border-top: 2px solid rgba(255, 255, 255, 0.75);
+  border-left: 2px solid rgba(255, 255, 255, 0.75);
+  border-right: 2px solid #05000D;
+  border-bottom: 2px solid #05000D;
+  transition: transform 0.06s ease;
+}
+
+.swing-btn:active:not(:disabled) {
+  border-top: 2px solid #05000D;
+  border-left: 2px solid #05000D;
+  border-right: 2px solid rgba(255, 255, 255, 0.6);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.6);
+  transform: translate(1px, 1px);
+}
+
+.swing-btn-neon {
+  background: #39FF14;
+  color: #05010D;
+  border-top: 3px solid #B8FF9E;
+  border-left: 3px solid #B8FF9E;
+  border-right: 3px solid #0B5900;
+  border-bottom: 3px solid #0B5900;
+  box-shadow: 0 0 22px rgba(57, 255, 20, 0.75);
+}
+
+.swing-btn-neon:hover:not(:disabled) {
+  box-shadow: 0 0 32px rgba(57, 255, 20, 0.95);
+}
+
+.swing-btn-neon:active:not(:disabled) {
+  border-top: 3px solid #0B5900;
+  border-left: 3px solid #0B5900;
+  border-right: 3px solid #B8FF9E;
+  border-bottom: 3px solid #B8FF9E;
+  transform: translate(1px, 1px);
+}
+
+.swing-btn-neon:disabled {
+  opacity: 0.4;
   box-shadow: none;
 }
 
-/* Floating soap bubbles */
-@keyframes float-bubble {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-14px) scale(1.03); }
-}
-
-.soap-bubble {
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle at 30% 28%,
-    rgba(255, 255, 255, 0.85) 0%,
-    rgba(255, 255, 255, 0.22) 35%,
-    rgba(168, 85, 247, 0.14) 70%,
-    rgba(57, 255, 20, 0.18) 100%
-  );
-  border: 2px solid rgba(255, 255, 255, 0.75);
-  box-shadow:
-    inset -6px -8px 16px rgba(255, 255, 255, 0.45),
-    0 8px 24px rgba(56, 189, 248, 0.25);
-  animation: float-bubble 6s ease-in-out infinite;
-}
-
-@keyframes pop-in {
-  0% { transform: scale(0.88) rotate(-1.5deg); opacity: 0; }
-  65% { transform: scale(1.03) rotate(0.8deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-
-.animate-pop-in {
-  animation: pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+.rainbow-strip {
+  background: linear-gradient(90deg, #FF0055, #FF6B00, #FFE600, #39FF14, #00E5FF, #9D4EDD, #FF0099);
 }
