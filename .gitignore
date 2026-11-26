@@ -27,3 +27,9 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Modernized Backend & Frontend ###
+backend/.gradle/
+backend/build/
+frontend/node_modules/
+frontend/dist/
