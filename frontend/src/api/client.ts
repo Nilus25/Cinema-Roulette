@@ -16,7 +16,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     let message = `HTTP ${res.status}`;
     try {
       const body = await res.json();
-      if (body?.message) message = body.message;
+      const detail = body?.detail ?? body?.message;
+      if (detail) {
+        message = res.status >= 500 && body?.traceId
+          ? `${detail} (Ref: ${body.traceId})`
+          : detail;
+      }
     } catch {
       // ignore non-JSON error body
     }

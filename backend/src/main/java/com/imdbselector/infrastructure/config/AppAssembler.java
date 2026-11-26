@@ -6,13 +6,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.imdbselector.application.usecase.MediaSelectionService;
 import com.imdbselector.application.usecase.UserService;
 import com.imdbselector.application.usecase.WatchlistService;
-import com.imdbselector.domain.exception.DuplicateResourceException;
-import com.imdbselector.domain.exception.InvalidCsvException;
-import com.imdbselector.domain.exception.NoMatchingMediaException;
-import com.imdbselector.domain.exception.ResourceNotFoundException;
 import com.imdbselector.domain.service.RandomMediaSelector;
 import com.imdbselector.domain.service.WatchlistFilterService;
-import com.imdbselector.infrastructure.adapter.in.http.ApiDtos;
+import com.imdbselector.infrastructure.adapter.in.http.HttpObservability;
 import com.imdbselector.infrastructure.adapter.in.http.SelectionController;
 import com.imdbselector.infrastructure.adapter.in.http.UserController;
 import com.imdbselector.infrastructure.adapter.in.http.WatchlistController;
@@ -78,22 +74,13 @@ public final class AppAssembler implements AutoCloseable {
             }));
         });
 
+        HttpObservability.register(app);
+
         app.get("/api/health", ctx -> ctx.json(Map.of("status", "UP")));
 
         new UserController(userService).registerRoutes(app);
         new WatchlistController(watchlistService).registerRoutes(app);
         new SelectionController(selectionService).registerRoutes(app);
-
-        app.exception(ResourceNotFoundException.class, (e, ctx) ->
-                ctx.status(404).json(new ApiDtos.ErrorResponse("NOT_FOUND", e.getMessage())));
-        app.exception(NoMatchingMediaException.class, (e, ctx) ->
-                ctx.status(404).json(new ApiDtos.ErrorResponse("NO_MATCHING_MEDIA", e.getMessage())));
-        app.exception(DuplicateResourceException.class, (e, ctx) ->
-                ctx.status(409).json(new ApiDtos.ErrorResponse("CONFLICT", e.getMessage())));
-        app.exception(InvalidCsvException.class, (e, ctx) ->
-                ctx.status(400).json(new ApiDtos.ErrorResponse("INVALID_CSV", e.getMessage())));
-        app.exception(IllegalArgumentException.class, (e, ctx) ->
-                ctx.status(400).json(new ApiDtos.ErrorResponse("BAD_REQUEST", e.getMessage())));
 
         return app;
     }

@@ -3,7 +3,6 @@ package com.imdbselector.infrastructure.adapter.in.http;
 import com.imdbselector.application.port.out.MediaItemRepository;
 import com.imdbselector.application.port.out.UserRepository;
 import com.imdbselector.application.usecase.UserService;
-import com.imdbselector.domain.exception.DuplicateResourceException;
 import com.imdbselector.domain.model.MediaItem;
 import com.imdbselector.domain.model.User;
 import com.imdbselector.domain.valueobject.ImdbId;
@@ -26,12 +25,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 class HttpApiTest {
 
     @Test
-    void createsUsersAndMapsDuplicateTo409() throws Exception {
+    void returnsRfc9457ProblemDetailWithTraceIdAndSanitizes500() throws Exception {
         var userService = new UserService(new InMemoryUserRepo(), new EmptyMediaRepo());
         Javalin app = Javalin.create(cfg -> cfg.http.defaultContentType = "application/json");
+        HttpObservability.register(app);
         new UserController(userService).registerRoutes(app);
-        app.exception(DuplicateResourceException.class, (e, ctx) ->
-                ctx.status(409).json(new ApiDtos.ErrorResponse("CONFLICT", e.getMessage())));
+        app.get("/api/boom", ctx -> {
+            throw new IllegalStateException("secret SQL connection string leaked");
+        });
 
         app.start(0);
         try {
@@ -45,10 +46,21 @@ class HttpApiTest {
 
             HttpResponse<String> first = client.send(createReq, HttpResponse.BodyHandlers.ofString());
             assertThat(first.statusCode()).isEqualTo(201);
-            assertThat(first.body()).contains("\"name\":\"Nil\"");
+            assertThat(first.headers().firstValue("X-Trace-Id")).isPresent();
 
             HttpResponse<String> duplicate = client.send(createReq, HttpResponse.BodyHandlers.ofString());
             assertThat(duplicate.statusCode()).isEqualTo(409);
+            assertThat(duplicate.body()).contains("\"code\":\"CONFLICT\"");
+            assertThat(duplicate.body()).contains("\"traceId\"");
+
+            HttpResponse<String> boom = client.send(
+                    HttpRequest.newBuilder(URI.create(base + "/api/boom")).GET().build(),
+                    HttpResponse.BodyHandlers.ofString()
+            );
+            assertThat(boom.statusCode()).isEqualTo(500);
+            assertThat(boom.body()).contains("\"code\":\"INTERNAL_ERROR\"");
+            assertThat(boom.body()).contains("\"traceId\"");
+            assertThat(boom.body()).doesNotContain("secret SQL connection string");
         } finally {
             app.stop();
         }

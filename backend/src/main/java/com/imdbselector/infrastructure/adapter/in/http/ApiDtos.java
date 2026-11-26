@@ -133,6 +133,16 @@ public final class ApiDtos {
         }
     }
 
-    public record ErrorResponse(String error, String message) {
+    /**
+     * RFC 9457 Problem Details payload for HTTP error responses.
+     */
+    public record ProblemDetail(
+            String type,
+            String title,
+            int status,
+            String detail,
+            String code,
+            String traceId
+    ) {
     }
 }
