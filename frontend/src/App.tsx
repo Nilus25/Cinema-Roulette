@@ -95,31 +95,33 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen text-slate-100">
+    <div className="crt-scanlines min-h-screen text-slate-100">
       <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8 space-y-5">
-        {/* Top Bar */}
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#39FF14]/40 bg-[#150C26] text-[#39FF14] shadow-[0_0_16px_rgba(57,255,20,0.2)]">
-              <Clapperboard className="h-5 w-5" />
+        {/* 90s Neon Sign Header */}
+        <header className="flex items-center justify-between border-b-2 border-[#FF007F] pb-4 shadow-[0_4px_16px_-4px_rgba(255,0,127,0.5)]">
+          <div className="flex items-center gap-3.5">
+            <div className="neon-box-green flex h-11 w-11 items-center justify-center bg-[#090214] text-[#39FF14]">
+              <Clapperboard className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="font-display text-2xl font-bold tracking-tight bg-gradient-to-r from-[#39FF14] via-[#A855F7] to-[#FF2A85] bg-clip-text text-transparent">
+              <h1 className="neon-sign-title font-display text-2xl sm:text-3xl font-bold tracking-wider uppercase">
                 IMDBSelector
               </h1>
-              <p className="text-xs text-purple-200/70">Midnight watchlist randomizer</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-[#FF7A59]">
+                // Video Club Randomizer v2.0
+              </p>
             </div>
           </div>
         </header>
 
         {error && (
-          <div className="rounded-2xl border border-[#FF3B5C]/50 bg-[#FF3B5C]/15 px-4 py-3 text-sm text-rose-200">
-            {error}
+          <div className="border-2 border-[#FF2A55] bg-[#240410] px-4 py-3 text-xs text-[#FF8CA0] shadow-[0_0_16px_rgba(255,42,85,0.5)]">
+            ERR: {error}
           </div>
         )}
 
         {/* Zone 1: Profile & Watchlist Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ProfileBar
             users={users}
             selectedUserId={selectedUserId}
@@ -179,7 +181,7 @@ export function App() {
         </div>
 
         {/* Zone 2: Centerpiece "The Picker" Stage */}
-        <section className="neon-marquee-border rounded-3xl bg-[#150C26]/95 p-5 space-y-4">
+        <section className="neon-box-purple bg-[#0C041A]/95 p-5 space-y-5">
           <FilterPanel
             metadata={metadata}
             filter={filter}
