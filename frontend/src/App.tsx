@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import confetti from 'canvas-confetti';
 import { Clapperboard } from 'lucide-react';
 import { api } from './api/client';
 import { FilterPanel } from './components/FilterPanel';
@@ -25,6 +26,15 @@ const EMPTY_FILTER: FilterState = {
   keywords: '',
   excludeSeen: false,
 };
+
+function fireRainbowConfetti() {
+  confetti({
+    particleCount: 70,
+    spread: 80,
+    origin: { y: 0.6 },
+    colors: ['#FF3B6B', '#FF8C42', '#FFE600', '#39FF14', '#00E5FF', '#A855F7', '#FF49B0'],
+  });
+}
 
 export function App() {
   const [metadata, setMetadata] = useState<FilterMetadata | null>(null);
@@ -95,32 +105,40 @@ export function App() {
   };
 
   return (
-    <div className="crt-scanlines min-h-screen text-slate-100">
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8 space-y-5">
-        {/* 90s Neon Sign Header */}
-        <header className="flex items-center justify-between border-b-2 border-[#FF007F] pb-4 shadow-[0_4px_16px_-4px_rgba(255,0,127,0.5)]">
-          <div className="flex items-center gap-3.5">
-            <div className="neon-box-green flex h-11 w-11 items-center justify-center bg-[#090214] text-[#39FF14]">
-              <Clapperboard className="h-6 w-6" />
+    <div className="relative min-h-screen overflow-hidden pb-12">
+      {/* Top Rainbow Ribbon */}
+      <div className="rainbow-bar h-2.5 w-full shadow-md" />
+
+      {/* Decorative Floating Soap Bubbles */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="soap-bubble absolute -top-10 -right-10 h-44 w-44 opacity-80" />
+        <div className="soap-bubble absolute top-1/3 -left-12 h-32 w-32 opacity-70" style={{ animationDelay: '1.5s' }} />
+        <div className="soap-bubble absolute bottom-8 right-6 h-24 w-24 opacity-75" style={{ animationDelay: '3s' }} />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-3xl px-4 py-6 sm:py-8 space-y-5">
+        {/* Whimsical Header */}
+        <header className="aero-card flex items-center justify-between rounded-full px-5 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#FF49B0] via-purple-500 to-[#39FF14] text-white shadow-md">
+              <Clapperboard className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="neon-sign-title font-display text-2xl sm:text-3xl font-bold tracking-wider uppercase">
+              <h1 className="font-display text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-700 via-[#FF2A85] to-orange-500 bg-clip-text text-transparent">
                 IMDBSelector
               </h1>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-[#FF7A59]">
-                // Video Club Randomizer v2.0
-              </p>
+              <p className="text-xs font-bold text-sky-600">Pick something fun without the scroll</p>
             </div>
           </div>
         </header>
 
         {error && (
-          <div className="border-2 border-[#FF2A55] bg-[#240410] px-4 py-3 text-xs text-[#FF8CA0] shadow-[0_0_16px_rgba(255,42,85,0.5)]">
-            ERR: {error}
+          <div className="animate-pop-in rounded-3xl border-3 border-rose-400 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600 shadow-md">
+            {error}
           </div>
         )}
 
-        {/* Zone 1: Profile & Watchlist Controls */}
+        {/* Zone 1: Profile & Watchlist */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ProfileBar
             users={users}
@@ -181,7 +199,7 @@ export function App() {
         </div>
 
         {/* Zone 2: Centerpiece "The Picker" Stage */}
-        <section className="neon-box-purple bg-[#0C041A]/95 p-5 space-y-5">
+        <section className="aero-card rounded-[2rem] p-5 space-y-5">
           <FilterPanel
             metadata={metadata}
             filter={filter}
@@ -202,6 +220,7 @@ export function App() {
                 try {
                   const result = await api.selectRandom(selectedWatchlistId, filter, selectedUserId);
                   setPicked(result);
+                  fireRainbowConfetti();
                 } finally {
                   setPicking(false);
                 }

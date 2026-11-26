@@ -32,12 +32,12 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex items-center gap-2 border-2 border-purple-500 bg-[#05010D] px-3.5 py-1.5 text-xs font-bold uppercase text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.4)] hover:border-[#39FF14] hover:text-[#39FF14]"
+            className="inline-flex items-center gap-2 rounded-full border-2 border-purple-300 bg-white px-4 py-1.5 text-xs font-extrabold text-purple-700 shadow-sm transition hover:border-purple-500 active:scale-95"
           >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
+            <SlidersHorizontal className="h-3.5 w-3.5 text-purple-600" />
             <span>Filters</span>
             {activeCount > 0 && (
-              <span className="bg-[#39FF14] px-1.5 py-0.2 text-[10px] font-bold text-black">
+              <span className="rounded-full bg-[#39FF14] px-2 py-0.2 text-[11px] font-extrabold text-green-950">
                 {activeCount}
               </span>
             )}
@@ -48,7 +48,7 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex items-center gap-1 text-xs uppercase text-[#FF7A59] hover:text-white"
+              className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-700 hover:bg-orange-200"
             >
               <RotateCcw className="h-3 w-3" />
               <span>Reset</span>
@@ -60,10 +60,10 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
           <button
             type="button"
             onClick={() => onChange({ ...filter, excludeSeen: !filter.excludeSeen })}
-            className={`inline-flex items-center gap-1.5 border-2 px-3.5 py-1.5 text-xs font-bold uppercase transition ${
+            className={`inline-flex items-center gap-1.5 rounded-full border-2 px-4 py-1.5 text-xs font-extrabold transition active:scale-95 ${
               filter.excludeSeen
-                ? 'border-[#FF007F] bg-[#FF007F] text-white shadow-[0_0_18px_rgba(255,0,127,0.7)]'
-                : 'border-purple-500/60 bg-[#05010D] text-slate-300 hover:border-[#FF007F]'
+                ? 'border-[#D91B7A] bg-[#FF49B0] text-white shadow-[0_4px_14px_rgba(255,73,176,0.45)]'
+                : 'border-slate-300 bg-white text-slate-600 hover:border-pink-400'
             }`}
           >
             <EyeOff className="h-3.5 w-3.5" />
@@ -73,61 +73,61 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
       </div>
 
       {open && (
-        <div className="space-y-4 border-2 border-purple-500/60 bg-[#05010D] p-4 shadow-[inset_0_0_20px_rgba(168,85,247,0.18)]">
+        <div className="animate-pop-in space-y-4 rounded-3xl border-2 border-purple-200 bg-white/95 p-4 shadow-inner">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <input
               type="number"
               step="0.1"
               min="0"
               max="10"
-              placeholder="MIN RATING"
+              placeholder="Min Rating"
               value={filter.minRating}
               onChange={(e) => onChange({ ...filter, minRating: e.target.value })}
-              className="border border-purple-500/50 bg-[#0C041A] px-3 py-2 text-xs text-[#FF9E44] placeholder-slate-600 focus:border-[#FF9E44] focus:outline-none"
+              className="rounded-2xl border-2 border-orange-200 bg-orange-50/40 px-3 py-2 text-xs font-bold text-slate-800 placeholder-slate-400 focus:border-[#FF7A59] focus:outline-none"
             />
             <input
               type="number"
               step="0.1"
               min="0"
               max="10"
-              placeholder="MAX RATING"
+              placeholder="Max Rating"
               value={filter.maxRating}
               onChange={(e) => onChange({ ...filter, maxRating: e.target.value })}
-              className="border border-purple-500/50 bg-[#0C041A] px-3 py-2 text-xs text-[#FF9E44] placeholder-slate-600 focus:border-[#FF9E44] focus:outline-none"
+              className="rounded-2xl border-2 border-orange-200 bg-orange-50/40 px-3 py-2 text-xs font-bold text-slate-800 placeholder-slate-400 focus:border-[#FF7A59] focus:outline-none"
             />
             <input
               type="number"
               min={metadata?.minYear ?? 1888}
-              placeholder="MIN YEAR"
+              placeholder="Min Year"
               value={filter.minYear}
               onChange={(e) => onChange({ ...filter, minYear: e.target.value })}
-              className="border border-purple-500/50 bg-[#0C041A] px-3 py-2 text-xs text-purple-200 placeholder-slate-600 focus:border-purple-400 focus:outline-none"
+              className="rounded-2xl border-2 border-purple-200 bg-purple-50/40 px-3 py-2 text-xs font-bold text-slate-800 placeholder-slate-400 focus:border-purple-500 focus:outline-none"
             />
             <input
               type="number"
               min={metadata?.minYear ?? 1888}
-              placeholder="MAX YEAR"
+              placeholder="Max Year"
               value={filter.maxYear}
               onChange={(e) => onChange({ ...filter, maxYear: e.target.value })}
-              className="border border-purple-500/50 bg-[#0C041A] px-3 py-2 text-xs text-purple-200 placeholder-slate-600 focus:border-purple-400 focus:outline-none"
+              className="rounded-2xl border-2 border-purple-200 bg-purple-50/40 px-3 py-2 text-xs font-bold text-slate-800 placeholder-slate-400 focus:border-purple-500 focus:outline-none"
             />
           </div>
 
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-[#39FF14]" />
+            <Search className="pointer-events-none absolute left-3.5 top-2.5 h-3.5 w-3.5 text-purple-500" />
             <input
               type="text"
-              placeholder="KEYWORDS (TITLE OR DIRECTOR)..."
+              placeholder="Keywords (title or director)..."
               value={filter.keywords}
               onChange={(e) => onChange({ ...filter, keywords: e.target.value })}
-              className="w-full border border-purple-500/50 bg-[#0C041A] pl-8 pr-3 py-2 text-xs text-[#39FF14] placeholder-slate-600 focus:border-[#39FF14] focus:outline-none"
+              className="w-full rounded-2xl border-2 border-purple-200 bg-white pl-9 pr-3 py-2 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:border-[#39FF14] focus:outline-none"
             />
           </div>
 
           {metadata && (
             <>
               <div className="space-y-1.5">
-                <p className="font-display text-[11px] uppercase tracking-wider text-[#39FF14]">Genres</p>
+                <p className="font-display text-xs font-bold text-green-700">Genres</p>
                 <div className="flex flex-wrap gap-1.5">
                   {metadata.genres.map((g) => {
                     const active = filter.genres.includes(g);
@@ -136,10 +136,10 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
                         key={g}
                         type="button"
                         onClick={() => onChange({ ...filter, genres: toggleItem(filter.genres, g) })}
-                        className={`border px-2.5 py-1 text-[11px] font-bold uppercase transition ${
+                        className={`rounded-full border-2 px-3 py-1 text-xs font-bold transition ${
                           active
-                            ? 'border-[#39FF14] bg-[#39FF14] text-black shadow-[0_0_10px_rgba(57,255,20,0.65)]'
-                            : 'border-purple-500/40 bg-[#0C041A] text-slate-300 hover:border-[#39FF14]'
+                            ? 'border-green-600 bg-[#39FF14] text-green-950 shadow-sm'
+                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-green-400'
                         }`}
                       >
                         {g}
@@ -150,7 +150,7 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
               </div>
 
               <div className="space-y-1.5">
-                <p className="font-display text-[11px] uppercase tracking-wider text-[#FF5CA0]">Media Types</p>
+                <p className="font-display text-xs font-bold text-[#D91B7A]">Media Types</p>
                 <div className="flex flex-wrap gap-1.5">
                   {metadata.mediaTypes.map((t) => {
                     const active = filter.mediaTypes.includes(t);
@@ -159,10 +159,10 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
                         key={t}
                         type="button"
                         onClick={() => onChange({ ...filter, mediaTypes: toggleItem(filter.mediaTypes, t) })}
-                        className={`border px-2.5 py-1 text-[11px] font-bold uppercase transition ${
+                        className={`rounded-full border-2 px-3 py-1 text-xs font-bold transition ${
                           active
-                            ? 'border-[#FF007F] bg-[#FF007F] text-white shadow-[0_0_10px_rgba(255,0,127,0.65)]'
-                            : 'border-purple-500/40 bg-[#0C041A] text-slate-300 hover:border-[#FF007F]'
+                            ? 'border-[#D91B7A] bg-[#FF49B0] text-white shadow-sm'
+                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-pink-400'
                         }`}
                       >
                         {t}
