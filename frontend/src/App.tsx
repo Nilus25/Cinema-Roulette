@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Clapperboard } from 'lucide-react';
 import { api } from './api/client';
 import { FilterPanel } from './components/FilterPanel';
 import { PickCard } from './components/PickCard';
@@ -47,7 +48,9 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    Promise.all([api.getFilterMetadata(), refreshLists()]).then(([meta]) => setMetadata(meta)).catch((e) => setError(e.message));
+    Promise.all([api.getFilterMetadata(), refreshLists()])
+      .then(([meta]) => setMetadata(meta))
+      .catch((e) => setError(e.message));
   }, [refreshLists]);
 
   useEffect(() => {
@@ -55,7 +58,8 @@ export function App() {
       setLastGeneratedPrompt(null);
       return;
     }
-    api.getUserDetails(selectedUserId)
+    api
+      .getUserDetails(selectedUserId)
       .then((details) => setLastGeneratedPrompt(details.unseenLastGeneratedPrompt))
       .catch((e) => setError(e.message));
   }, [selectedUserId]);
@@ -91,22 +95,31 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto max-w-3xl px-4 py-6 space-y-4">
+    <div className="min-h-screen text-slate-100">
+      <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8 space-y-5">
+        {/* Top Bar */}
         <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-amber-400">IMDBSelector</h1>
-            <p className="text-xs text-slate-400">Pick what to watch without the endless scroll</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#39FF14]/40 bg-[#150C26] text-[#39FF14] shadow-[0_0_16px_rgba(57,255,20,0.2)]">
+              <Clapperboard className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="font-display text-2xl font-bold tracking-tight bg-gradient-to-r from-[#39FF14] via-[#A855F7] to-[#FF2A85] bg-clip-text text-transparent">
+                IMDBSelector
+              </h1>
+              <p className="text-xs text-purple-200/70">Midnight watchlist randomizer</p>
+            </div>
           </div>
         </header>
 
         {error && (
-          <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-300">
+          <div className="rounded-2xl border border-[#FF3B5C]/50 bg-[#FF3B5C]/15 px-4 py-3 text-sm text-rose-200">
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Zone 1: Profile & Watchlist Controls */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           <ProfileBar
             users={users}
             selectedUserId={selectedUserId}
@@ -165,40 +178,44 @@ export function App() {
           />
         </div>
 
-        <FilterPanel
-          metadata={metadata}
-          filter={filter}
-          hasUser={Boolean(selectedUserId)}
-          onChange={setFilter}
-          onReset={() => setFilter(EMPTY_FILTER)}
-        />
+        {/* Zone 2: Centerpiece "The Picker" Stage */}
+        <section className="neon-marquee-border rounded-3xl bg-[#150C26]/95 p-5 space-y-4">
+          <FilterPanel
+            metadata={metadata}
+            filter={filter}
+            hasUser={Boolean(selectedUserId)}
+            onChange={setFilter}
+            onReset={() => setFilter(EMPTY_FILTER)}
+          />
 
-        <PickCard
-          canPick={Boolean(selectedWatchlistId)}
-          loading={picking}
-          picked={picked}
-          hasUser={Boolean(selectedUserId)}
-          onPick={() =>
-            runAction(async () => {
-              if (!selectedWatchlistId) return;
-              setPicking(true);
-              try {
-                const result = await api.selectRandom(selectedWatchlistId, filter, selectedUserId);
-                setPicked(result);
-              } finally {
-                setPicking(false);
-              }
-            })
-          }
-          onMarkSeen={(imdbId) =>
-            runAction(async () => {
-              if (!selectedUserId) return;
-              await api.markSeen(selectedUserId, imdbId);
-              await Promise.all([refreshLists(), loadItems()]);
-            })
-          }
-        />
+          <PickCard
+            canPick={Boolean(selectedWatchlistId)}
+            loading={picking}
+            picked={picked}
+            hasUser={Boolean(selectedUserId)}
+            onPick={() =>
+              runAction(async () => {
+                if (!selectedWatchlistId) return;
+                setPicking(true);
+                try {
+                  const result = await api.selectRandom(selectedWatchlistId, filter, selectedUserId);
+                  setPicked(result);
+                } finally {
+                  setPicking(false);
+                }
+              })
+            }
+            onMarkSeen={(imdbId) =>
+              runAction(async () => {
+                if (!selectedUserId) return;
+                await api.markSeen(selectedUserId, imdbId);
+                await Promise.all([refreshLists(), loadItems()]);
+              })
+            }
+          />
+        </section>
 
+        {/* Zone 3: Watchlist Vault */}
         {selectedWatchlistId && (
           <WatchlistBrowser
             items={items}
