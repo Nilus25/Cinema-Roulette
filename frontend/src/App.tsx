@@ -152,8 +152,8 @@ export function App() {
   }, [selectedWatchlistId, items]);
 
   return (
-    <div className="min-h-screen pb-12">
-      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 py-6 space-y-4">
+    <div className="min-h-screen bg-black">
+      <div className="neon-stage-bg min-h-screen mx-auto max-w-[1440px] border-x-2 border-[#B5179E]/35 px-4 sm:px-6 py-6 pb-12 space-y-4">
         {error && (
           <div className="rounded border-2 border-[#FF2E54] bg-[#290510] px-4 py-3 text-xs font-bold text-rose-200 shadow-[4px_4px_0px_#FF2E54]">
             {error}
