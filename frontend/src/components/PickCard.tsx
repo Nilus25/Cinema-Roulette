@@ -1,4 +1,4 @@
-import { Check, Dices, ExternalLink, Film, Star, Tv } from 'lucide-react';
+import { Check, Disc3, ExternalLink, Film, Star, Tv } from 'lucide-react';
 import type { MediaItemResponse } from '../types/api';
 
 interface PickCardProps {
@@ -30,12 +30,12 @@ export function PickCard({
         onClick={onPick}
         className="neo-btn-primary flex w-full items-center justify-center gap-3 px-6 py-4 font-display text-lg font-extrabold tracking-wide disabled:cursor-not-allowed"
       >
-        <Dices className={`h-6 w-6 ${loading ? 'animate-spin' : ''}`} />
+        <Disc3 className={`h-6 w-6 ${loading ? 'animate-spin' : ''}`} />
         <span>
           {loading
-            ? 'Rolling...'
+            ? 'Spinning...'
             : canPick
-              ? `Roll from ${candidateCount} ${candidateCount === 1 ? 'title' : 'titles'}!`
+              ? `Spin from ${candidateCount} ${candidateCount === 1 ? 'title' : 'titles'}!`
               : 'Pick a watchlist first'}
         </span>
       </button>

@@ -149,7 +149,7 @@ export function ProfileBar({
           <div className="flex items-start gap-2">
             <Sparkles className="h-4 w-4 shrink-0 text-[#FFE600] mt-0.5" />
             <span>
-              Last rolled: <strong className="text-[#39FF14]">{lastGeneratedPrompt.title}</strong>
+              Last spun: <strong className="text-[#39FF14]">{lastGeneratedPrompt.title}</strong>
               {lastGeneratedPrompt.releaseYear ? ` (${lastGeneratedPrompt.releaseYear})` : ''}. Watched it?
             </span>
           </div>
