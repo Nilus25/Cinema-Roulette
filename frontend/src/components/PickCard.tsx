@@ -1,6 +1,29 @@
-import { Check, Disc3, ExternalLink, Eye, Film, History, Star, Ticket, Tv } from 'lucide-react';
+import { Check, ExternalLink, Eye, Film, History, Star, Ticket, Tv } from 'lucide-react';
 import type { MediaItemResponse } from '../types/api';
 import { FilmstripReel } from './FilmstripReel';
+
+function FilmReelIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9.5" />
+      <circle cx="12" cy="12" r="2.2" />
+      <circle cx="12" cy="6.2" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="17.5" cy="10.2" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="15.4" cy="16.7" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="8.6" cy="16.7" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="6.5" cy="10.2" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
 
 interface PickCardProps {
   canPick: boolean;
@@ -47,12 +70,12 @@ export function PickCard({
         onClick={onPick}
         className="neo-btn-primary flex w-full items-center justify-center gap-3 px-6 py-4 font-display text-lg font-extrabold tracking-wide disabled:cursor-not-allowed"
       >
-        <Disc3 className={`h-6 w-6 ${loading || spinning ? 'animate-spin' : ''}`} />
+        <FilmReelIcon className={`h-6 w-6 ${loading || spinning ? 'animate-spin' : ''}`} />
         <span>
           {loading || spinning
             ? 'Spinning the 35mm Reel...'
             : canPick
-              ? `Spin from ${candidateCount} ${candidateCount === 1 ? 'title' : 'titles'}!`
+              ? 'Spin the reel!'
               : 'Pick a watchlist first'}
         </span>
       </button>
