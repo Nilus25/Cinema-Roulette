@@ -61,7 +61,7 @@ public final class SelectRandomMediaUseCase {
                     .orElseThrow(() -> new ResourceNotFoundException("User not found: " + actorId.value()));
 
             List<MediaItem> allItems = mediaItemRepository.findByIds(watchlist.mediaItemIds());
-            List<MediaItem> filtered = Watchlist.filterItems(allItems, criteria);
+            List<MediaItem> filtered = Watchlist.filterItems(allItems, criteria, user.seenMediaIds());
 
             SelectionMode mode = (criteria != null && criteria.excludeSeen())
                     ? new SelectionMode.NotSeen(user.seenMediaIds())

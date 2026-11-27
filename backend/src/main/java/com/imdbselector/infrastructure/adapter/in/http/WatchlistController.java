@@ -18,6 +18,8 @@ import com.imdbselector.domain.valueobject.ImdbId;
 import com.imdbselector.domain.valueobject.MediaType;
 import com.imdbselector.domain.valueobject.Rating;
 import com.imdbselector.domain.valueobject.ReleaseYear;
+import com.imdbselector.domain.valueobject.SortBy;
+import com.imdbselector.domain.valueobject.SortDirection;
 import com.imdbselector.domain.valueobject.UserId;
 import com.imdbselector.domain.valueobject.WatchlistDiff;
 import com.imdbselector.domain.valueobject.WatchlistId;
@@ -172,13 +174,21 @@ public final class WatchlistController {
                     ctx.queryParam("maxRating"),
                     ctx.queryParam("minYear"),
                     ctx.queryParam("maxYear"),
+                    ctx.queryParam("minRuntime"),
+                    ctx.queryParam("maxRuntime"),
+                    ctx.queryParam("minVotes"),
+                    ctx.queryParam("maxVotes"),
                     ctx.queryParam("genres"),
                     ctx.queryParam("mediaTypes"),
                     ctx.queryParam("keywords"),
-                    Boolean.parseBoolean(ctx.queryParam("excludeSeen"))
+                    Boolean.parseBoolean(ctx.queryParam("excludeSeen")),
+                    ctx.queryParam("query")
             );
+            SortBy sortBy = SortBy.fromString(ctx.queryParam("sortBy"));
+            SortDirection sortDir = SortDirection.fromString(ctx.queryParam("sortDir"), null);
 
-            List<ApiDtos.WatchlistItemResponse> items = getWatchlistItems.execute(userId, watchlistId, criteria)
+            List<ApiDtos.WatchlistItemResponse> items = getWatchlistItems
+                    .execute(userId, watchlistId, criteria, sortBy, sortDir)
                     .stream()
                     .map(ApiDtos.WatchlistItemResponse::from)
                     .toList();
@@ -198,21 +208,45 @@ public final class WatchlistController {
             String maxRating,
             String minYear,
             String maxYear,
+            String minRuntime,
+            String maxRuntime,
+            String minVotes,
+            String maxVotes,
             String genres,
             String mediaTypes,
             String keywords,
-            boolean excludeSeen
+            boolean excludeSeen,
+            String query
     ) {
         Rating minR = (minRating == null || minRating.isBlank()) ? null : Rating.of(minRating);
         Rating maxR = (maxRating == null || maxRating.isBlank()) ? null : Rating.of(maxRating);
-        ReleaseYear minY = (minYear == null || minYear.isBlank()) ? null : new ReleaseYear(Integer.parseInt(minYear.trim()));
-        ReleaseYear maxY = (maxYear == null || maxYear.isBlank()) ? null : new ReleaseYear(Integer.parseInt(maxYear.trim()));
+        ReleaseYear minY = (minYear == null || minYear.isBlank()) ? null : new ReleaseYear(parseIntParam("minYear", minYear));
+        ReleaseYear maxY = (maxYear == null || maxYear.isBlank()) ? null : new ReleaseYear(parseIntParam("maxYear", maxYear));
+        Integer minRt = parseOptionalInt("minRuntime", minRuntime);
+        Integer maxRt = parseOptionalInt("maxRuntime", maxRuntime);
+        Integer minV = parseOptionalInt("minVotes", minVotes);
+        Integer maxV = parseOptionalInt("maxVotes", maxVotes);
 
         Set<Genre> genreSet = splitCsv(genres).stream().map(Genre::fromLabel).collect(Collectors.toSet());
         Set<MediaType> typeSet = splitCsv(mediaTypes).stream().map(MediaType::fromLabel).collect(Collectors.toSet());
         List<String> keywordList = splitCsv(keywords);
 
-        return new FilterCriteria(minR, maxR, minY, maxY, genreSet, typeSet, keywordList, excludeSeen);
+        return new FilterCriteria(minR, maxR, minY, maxY, minRt, maxRt, minV, maxV, genreSet, typeSet, keywordList, excludeSeen, query);
+    }
+
+    private static Integer parseOptionalInt(String paramName, String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        return parseIntParam(paramName, raw);
+    }
+
+    private static int parseIntParam(String paramName, String raw) {
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid integer for '" + paramName + "': " + raw);
+        }
     }
 
     private static List<String> splitCsv(String raw) {

@@ -10,10 +10,13 @@ import { ProfileBar } from './components/ProfileBar';
 import { UpdateDiffModal } from './components/UpdateDiffModal';
 import { WatchlistBar } from './components/WatchlistBar';
 import { WatchlistBrowser } from './components/WatchlistBrowser';
+import { validateQuerySyntax } from './utils/queryBuilder';
 import type {
   FilterMetadata,
   FilterState,
   MediaItemResponse,
+  SortBy,
+  SortDirection,
   UserDetailsResponse,
   WatchlistItemResponse,
   WatchlistResponse,
@@ -26,10 +29,15 @@ const EMPTY_FILTER: FilterState = {
   maxRating: '',
   minYear: '',
   maxYear: '',
+  minRuntime: '',
+  maxRuntime: '',
+  minVotes: '',
+  maxVotes: '',
   genres: [],
   mediaTypes: [],
   keywords: '',
   excludeSeen: false,
+  query: '',
 };
 
 function fireRainbowConfetti() {
@@ -80,6 +88,8 @@ export function App() {
   const [publicWatchlists, setPublicWatchlists] = useState<WatchlistResponse[]>([]);
   const [selectedWatchlistId, setSelectedWatchlistId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterState>(EMPTY_FILTER);
+  const [sortBy, setSortBy] = useState<SortBy>('DEFAULT');
+  const [sortDir, setSortDir] = useState<SortDirection>('DESC');
 
   const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState<MediaItemResponse | null>(null);
   const [picked, setPicked] = useState<MediaItemResponse | null>(null);
@@ -151,14 +161,22 @@ export function App() {
     setSelectedWatchlistId(match ? match.id : watchlists[0].id);
   }, [userDetails, watchlists, selectedWatchlistId]);
 
+  const queryValidation = useMemo(
+    () => validateQuerySyntax(filter.query, metadata),
+    [filter.query, metadata],
+  );
+
   const loadItems = useCallback(async () => {
     if (!userDetails || !selectedWatchlistId) {
       setItems([]);
       return;
     }
+    if (filter.query.trim() && !queryValidation.valid) {
+      return;
+    }
     setLoadingItems(true);
     try {
-      const data = await api.getWatchlistItems(selectedWatchlistId, filter);
+      const data = await api.getWatchlistItems(selectedWatchlistId, filter, sortBy, sortDir);
       setItems(data);
       setError(null);
     } catch (e) {
@@ -166,7 +184,7 @@ export function App() {
     } finally {
       setLoadingItems(false);
     }
-  }, [userDetails, selectedWatchlistId, filter]);
+  }, [userDetails, selectedWatchlistId, filter, sortBy, sortDir, queryValidation.valid]);
 
   useEffect(() => {
     loadItems();
@@ -313,7 +331,7 @@ export function App() {
                   />
 
                   <PickCard
-                    canPick={Boolean(selectedWatchlistId)}
+                    canPick={Boolean(selectedWatchlistId) && queryValidation.valid}
                     candidates={items.map((row) => row.item)}
                     candidateCount={items.length}
                     loading={picking}
@@ -443,6 +461,12 @@ export function App() {
                 items={items}
                 hasUser={true}
                 loading={loadingItems}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onChangeSort={(nextSortBy, nextSortDir) => {
+                  setSortBy(nextSortBy);
+                  setSortDir(nextSortDir);
+                }}
                 onToggleSeen={(imdbId, currentlySeen) =>
                   runAction(async () => {
                     if (currentlySeen) {

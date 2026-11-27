@@ -20,7 +20,7 @@ public final class SelectionController {
             UserId userId = authController.requireAuthenticatedUser(ctx);
             WatchlistId watchlistId = WatchlistId.fromString(ctx.pathParam("watchlistId"));
             ApiDtos.SelectRequest req = ctx.body().isBlank()
-                    ? new ApiDtos.SelectRequest(null, null, null, null, null, null, null, false)
+                    ? ApiDtos.SelectRequest.empty()
                     : ctx.bodyAsClass(ApiDtos.SelectRequest.class);
 
             MediaItem picked = selectRandomMedia.execute(watchlistId, userId, req.toCriteria());

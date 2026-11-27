@@ -10,7 +10,9 @@ import com.imdbselector.domain.valueobject.Rating;
 import com.imdbselector.domain.valueobject.ReleaseYear;
 import org.jooq.DSLContext;
 import org.jooq.Record;
+import org.jooq.impl.DSL;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
@@ -43,9 +45,12 @@ public final class JooqMediaItemRepository implements MediaItemRepository {
                 tx.insertInto(MEDIA_ITEMS)
                         .set(MEDIA_ITEMS.IMDB_ID, item.imdbId().value())
                         .set(MEDIA_ITEMS.TITLE, item.title())
+                        .set(MEDIA_ITEMS.ORIGINAL_TITLE, item.originalTitle())
                         .set(MEDIA_ITEMS.DIRECTOR, item.director())
                         .set(MEDIA_ITEMS.RELEASE_YEAR, item.releaseYear() == null ? null : item.releaseYear().value())
                         .set(MEDIA_ITEMS.RATING, item.rating() == null ? null : item.rating().value())
+                        .set(MEDIA_ITEMS.RUNTIME_MINS, item.runtimeMinutes())
+                        .set(MEDIA_ITEMS.NUM_VOTES, item.numVotes())
                         .set(MEDIA_ITEMS.MEDIA_TYPE, item.mediaType().label())
                         .set(MEDIA_ITEMS.IMDB_URL, item.imdbUrl())
                         .set(MEDIA_ITEMS.SOURCE, item.source().name())
@@ -53,9 +58,12 @@ public final class JooqMediaItemRepository implements MediaItemRepository {
                         .onConflict(MEDIA_ITEMS.IMDB_ID)
                         .doUpdate()
                         .set(MEDIA_ITEMS.TITLE, item.title())
+                        .set(MEDIA_ITEMS.ORIGINAL_TITLE, DSL.coalesce(DSL.val(item.originalTitle()), MEDIA_ITEMS.ORIGINAL_TITLE))
                         .set(MEDIA_ITEMS.DIRECTOR, item.director())
                         .set(MEDIA_ITEMS.RELEASE_YEAR, item.releaseYear() == null ? null : item.releaseYear().value())
                         .set(MEDIA_ITEMS.RATING, item.rating() == null ? null : item.rating().value())
+                        .set(MEDIA_ITEMS.RUNTIME_MINS, DSL.coalesce(DSL.val(item.runtimeMinutes()), MEDIA_ITEMS.RUNTIME_MINS))
+                        .set(MEDIA_ITEMS.NUM_VOTES, DSL.coalesce(DSL.val(item.numVotes()), MEDIA_ITEMS.NUM_VOTES))
                         .set(MEDIA_ITEMS.MEDIA_TYPE, item.mediaType().label())
                         .set(MEDIA_ITEMS.IMDB_URL, item.imdbUrl())
                         .set(MEDIA_ITEMS.SOURCE, item.source().name())
@@ -106,13 +114,16 @@ public final class JooqMediaItemRepository implements MediaItemRepository {
 
     private MediaItem mapRecord(Record r, Set<Genre> genres) {
         Integer year = r.get(MEDIA_ITEMS.RELEASE_YEAR);
-        java.math.BigDecimal rating = r.get(MEDIA_ITEMS.RATING);
+        BigDecimal rating = r.get(MEDIA_ITEMS.RATING);
         return new MediaItem(
                 new ImdbId(r.get(MEDIA_ITEMS.IMDB_ID)),
                 r.get(MEDIA_ITEMS.TITLE),
+                r.get(MEDIA_ITEMS.ORIGINAL_TITLE),
                 r.get(MEDIA_ITEMS.DIRECTOR),
                 year == null ? null : new ReleaseYear(year),
                 rating == null ? null : new Rating(rating),
+                r.get(MEDIA_ITEMS.RUNTIME_MINS),
+                r.get(MEDIA_ITEMS.NUM_VOTES),
                 MediaType.fromLabel(r.get(MEDIA_ITEMS.MEDIA_TYPE)),
                 r.get(MEDIA_ITEMS.IMDB_URL),
                 genres,

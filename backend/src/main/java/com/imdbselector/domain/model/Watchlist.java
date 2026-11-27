@@ -116,12 +116,17 @@ public final class Watchlist {
      * Filters the given catalog items belonging to this watchlist according to FilterCriteria.
      */
     public static List<MediaItem> filterItems(List<MediaItem> items, FilterCriteria criteria) {
+        return filterItems(items, criteria, Set.of());
+    }
+
+    public static List<MediaItem> filterItems(List<MediaItem> items, FilterCriteria criteria, Set<ImdbId> seenIds) {
         if (items == null || items.isEmpty()) {
             return List.of();
         }
         FilterCriteria effective = criteria == null ? FilterCriteria.unfiltered() : criteria;
+        Set<ImdbId> effectiveSeen = seenIds == null ? Set.of() : seenIds;
         return items.stream()
-                .filter(item -> item.matches(effective))
+                .filter(item -> item.matches(effective, effectiveSeen.contains(item.imdbId())))
                 .toList();
     }
 

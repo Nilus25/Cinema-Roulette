@@ -1,4 +1,4 @@
-import { Check, ExternalLink, Eye, Film, History, Star, Ticket, Tv } from 'lucide-react';
+import { Check, Clock, ExternalLink, Eye, Film, History, Star, Ticket, Tv, Users } from 'lucide-react';
 import type { MediaItemResponse } from '../types/api';
 import { FilmstripReel } from './FilmstripReel';
 
@@ -102,14 +102,33 @@ export function PickCard({
 
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1.5">
-                <div className="inline-flex items-center gap-1.5 rounded border border-[#FF1E8A] bg-[#FF1E8A]/20 px-2.5 py-0.5 text-xs font-bold text-[#FF72B6]">
-                  {isSeries ? <Tv className="h-3.5 w-3.5" /> : <Film className="h-3.5 w-3.5" />}
-                  <span>{picked.mediaType}</span>
-                  {picked.releaseYear && <span>• {picked.releaseYear}</span>}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="inline-flex items-center gap-1.5 rounded border border-[#FF1E8A] bg-[#FF1E8A]/20 px-2.5 py-0.5 text-xs font-bold text-[#FF72B6]">
+                    {isSeries ? <Tv className="h-3.5 w-3.5" /> : <Film className="h-3.5 w-3.5" />}
+                    <span>{picked.mediaType}</span>
+                    {picked.releaseYear && <span>• {picked.releaseYear}</span>}
+                  </div>
+                  {picked.runtimeMinutes !== null && (
+                    <span className="inline-flex items-center gap-1 rounded border border-[#00E5FF]/60 bg-[#00E5FF]/15 px-2 py-0.5 text-xs font-bold text-[#00E5FF]">
+                      <Clock className="h-3 w-3" />
+                      {picked.runtimeMinutes >= 60
+                        ? `${Math.floor(picked.runtimeMinutes / 60)}h ${picked.runtimeMinutes % 60}m`
+                        : `${picked.runtimeMinutes}m`}
+                    </span>
+                  )}
+                  {picked.numVotes !== null && (
+                    <span className="inline-flex items-center gap-1 rounded border border-purple-400/50 bg-[#1B0938] px-2 py-0.5 text-xs font-semibold text-purple-200">
+                      <Users className="h-3 w-3" />
+                      {picked.numVotes.toLocaleString()} votes
+                    </span>
+                  )}
                 </div>
                 <h3 className="font-display text-2xl font-extrabold text-[#39FF14] drop-shadow-[0_0_12px_rgba(57,255,20,0.55)]">
                   {picked.title}
                 </h3>
+                {picked.originalTitle && picked.originalTitle.toLowerCase() !== picked.title.toLowerCase() && (
+                  <p className="text-xs italic text-purple-200/70">{picked.originalTitle}</p>
+                )}
                 {picked.director && (
                   <p className="text-xs font-semibold text-purple-200/85">Directed by {picked.director}</p>
                 )}

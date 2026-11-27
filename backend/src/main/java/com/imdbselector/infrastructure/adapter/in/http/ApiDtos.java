@@ -169,9 +169,12 @@ public final class ApiDtos {
     public record MediaItemResponse(
             String imdbId,
             String title,
+            String originalTitle,
             String director,
             Integer releaseYear,
             BigDecimal rating,
+            Integer runtimeMinutes,
+            Integer numVotes,
             String mediaType,
             String imdbUrl,
             List<String> genres
@@ -180,9 +183,12 @@ public final class ApiDtos {
             return new MediaItemResponse(
                     item.imdbId().value(),
                     item.title(),
+                    item.originalTitle(),
                     item.director(),
                     item.releaseYear() == null ? null : item.releaseYear().value(),
                     item.rating() == null ? null : item.rating().value(),
+                    item.runtimeMinutes(),
+                    item.numVotes(),
                     item.mediaType().label(),
                     item.imdbUrl(),
                     item.genres().stream().map(Genre::label).sorted().toList()
@@ -213,11 +219,20 @@ public final class ApiDtos {
             BigDecimal maxRating,
             Integer minYear,
             Integer maxYear,
+            Integer minRuntime,
+            Integer maxRuntime,
+            Integer minVotes,
+            Integer maxVotes,
             List<String> genres,
             List<String> mediaTypes,
             List<String> keywords,
-            boolean excludeSeen
+            boolean excludeSeen,
+            String query
     ) {
+        public static SelectRequest empty() {
+            return new SelectRequest(null, null, null, null, null, null, null, null, null, null, null, false, null);
+        }
+
         public FilterCriteria toCriteria() {
             Set<Genre> genreSet = genres == null ? Set.of() : genres.stream().map(Genre::fromLabel).collect(Collectors.toSet());
             Set<MediaType> typeSet = mediaTypes == null ? Set.of() : mediaTypes.stream().map(MediaType::fromLabel).collect(Collectors.toSet());
@@ -226,10 +241,15 @@ public final class ApiDtos {
                     maxRating == null ? null : new Rating(maxRating),
                     minYear == null ? null : new ReleaseYear(minYear),
                     maxYear == null ? null : new ReleaseYear(maxYear),
+                    minRuntime,
+                    maxRuntime,
+                    minVotes,
+                    maxVotes,
                     genreSet,
                     typeSet,
                     keywords,
-                    excludeSeen
+                    excludeSeen,
+                    query
             );
         }
     }

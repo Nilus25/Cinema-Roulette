@@ -9,9 +9,12 @@ export interface UserResponse {
 export interface MediaItemResponse {
   imdbId: string;
   title: string;
+  originalTitle: string | null;
   director: string;
   releaseYear: number | null;
   rating: number | null;
+  runtimeMinutes: number | null;
+  numVotes: number | null;
   mediaType: string;
   imdbUrl: string;
   genres: string[];
@@ -59,13 +62,21 @@ export interface FilterMetadata {
   minYear: number;
 }
 
+export type SortBy = 'DEFAULT' | 'RATING' | 'YEAR' | 'RUNTIME' | 'VOTES' | 'TITLE' | 'UNSEEN';
+export type SortDirection = 'ASC' | 'DESC';
+
 export interface FilterState {
   minRating: string;
   maxRating: string;
   minYear: string;
   maxYear: string;
+  minRuntime: string;
+  maxRuntime: string;
+  minVotes: string;
+  maxVotes: string;
   genres: string[];
   mediaTypes: string[];
   keywords: string;
   excludeSeen: boolean;
+  query: string;
 }

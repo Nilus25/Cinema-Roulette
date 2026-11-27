@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, EyeOff, RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
 import type { FilterMetadata, FilterState } from '../types/api';
+import { getActiveTermsFromQuery, normalizeKey, toggleTermInQuery } from '../utils/queryBuilder';
+import { QueryConstructor } from './QueryConstructor';
 
 interface FilterPanelProps {
   metadata: FilterMetadata | null;
@@ -13,19 +15,38 @@ interface FilterPanelProps {
 export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: FilterPanelProps) {
   const [open, setOpen] = useState(false);
 
-  const toggleItem = (list: string[], value: string) =>
-    list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+  const activeQueryTerms = useMemo(
+    () => getActiveTermsFromQuery(filter.query, metadata),
+    [filter.query, metadata],
+  );
 
   const activeCount =
     (filter.minRating ? 1 : 0) +
     (filter.maxRating ? 1 : 0) +
     (filter.minYear ? 1 : 0) +
     (filter.maxYear ? 1 : 0) +
+    (filter.minRuntime ? 1 : 0) +
+    (filter.maxRuntime ? 1 : 0) +
+    (filter.minVotes ? 1 : 0) +
+    (filter.maxVotes ? 1 : 0) +
     (filter.keywords.trim() ? 1 : 0) +
+    (filter.query.trim() ? 1 : 0) +
     filter.genres.length +
     filter.mediaTypes.length;
 
   const hasAnyFilter = activeCount > 0 || filter.excludeSeen;
+
+  const handleToggleChip = (label: string, kind: 'genre' | 'mediaType') => {
+    const nextQuery = toggleTermInQuery(filter.query, label, kind, metadata);
+    const nextGenres = kind === 'genre' ? filter.genres.filter((g) => g !== label) : filter.genres;
+    const nextTypes = kind === 'mediaType' ? filter.mediaTypes.filter((t) => t !== label) : filter.mediaTypes;
+    onChange({
+      ...filter,
+      genres: nextGenres,
+      mediaTypes: nextTypes,
+      query: nextQuery,
+    });
+  };
 
   return (
     <div className="space-y-3">
@@ -113,13 +134,49 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
               onChange={(e) => onChange({ ...filter, maxYear: e.target.value })}
               className="rounded border-2 border-purple-500/50 bg-[#14062B] px-3 py-2 text-xs font-semibold text-purple-100 placeholder-purple-300/40 focus:border-purple-400 focus:outline-none"
             />
+            <input
+              type="number"
+              min="0"
+              step="5"
+              placeholder="Min Runtime (m)"
+              value={filter.minRuntime}
+              onChange={(e) => onChange({ ...filter, minRuntime: e.target.value })}
+              className="rounded border-2 border-[#00E5FF]/40 bg-[#14062B] px-3 py-2 text-xs font-semibold text-[#00E5FF] placeholder-purple-300/40 focus:border-[#00E5FF] focus:outline-none"
+            />
+            <input
+              type="number"
+              min="0"
+              step="5"
+              placeholder="Max Runtime (m)"
+              value={filter.maxRuntime}
+              onChange={(e) => onChange({ ...filter, maxRuntime: e.target.value })}
+              className="rounded border-2 border-[#00E5FF]/40 bg-[#14062B] px-3 py-2 text-xs font-semibold text-[#00E5FF] placeholder-purple-300/40 focus:border-[#00E5FF] focus:outline-none"
+            />
+            <input
+              type="number"
+              min="0"
+              step="1000"
+              placeholder="Min Votes"
+              value={filter.minVotes}
+              onChange={(e) => onChange({ ...filter, minVotes: e.target.value })}
+              className="rounded border-2 border-[#FFE600]/40 bg-[#14062B] px-3 py-2 text-xs font-semibold text-[#FFE600] placeholder-purple-300/40 focus:border-[#FFE600] focus:outline-none"
+            />
+            <input
+              type="number"
+              min="0"
+              step="1000"
+              placeholder="Max Votes"
+              value={filter.maxVotes}
+              onChange={(e) => onChange({ ...filter, maxVotes: e.target.value })}
+              className="rounded border-2 border-[#FFE600]/40 bg-[#14062B] px-3 py-2 text-xs font-semibold text-[#FFE600] placeholder-purple-300/40 focus:border-[#FFE600] focus:outline-none"
+            />
           </div>
 
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-[#39FF14]" />
             <input
               type="text"
-              placeholder="Keywords (title or director, comma-separated)..."
+              placeholder="Keywords (title, original title, or director, comma-separated)..."
               value={filter.keywords}
               onChange={(e) => onChange({ ...filter, keywords: e.target.value })}
               className="w-full rounded border-2 border-purple-500/50 bg-[#14062B] pl-9 pr-3 py-2 text-xs font-semibold text-[#39FF14] placeholder-purple-300/40 focus:border-[#39FF14] focus:outline-none"
@@ -129,15 +186,20 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
           {metadata && (
             <>
               <div className="space-y-1.5">
-                <p className="font-display text-xs font-bold text-[#39FF14]">Genres</p>
+                <div className="flex items-center justify-between">
+                  <p className="font-display text-xs font-bold text-[#39FF14]">Genres</p>
+                  <span className="text-[10px] font-semibold text-purple-300/55">
+                    Click to toggle into Query (OR)
+                  </span>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {metadata.genres.map((g) => {
-                    const active = filter.genres.includes(g);
+                    const active = filter.genres.includes(g) || activeQueryTerms.has(normalizeKey(g));
                     return (
                       <button
                         key={g}
                         type="button"
-                        onClick={() => onChange({ ...filter, genres: toggleItem(filter.genres, g) })}
+                        onClick={() => handleToggleChip(g, 'genre')}
                         className={`rounded-full px-3 py-1 text-xs font-extrabold transition ${
                           active
                             ? 'casino-chip-green'
@@ -155,12 +217,12 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
                 <p className="font-display text-xs font-bold text-[#FF5CA8]">Media Types</p>
                 <div className="flex flex-wrap gap-1.5">
                   {metadata.mediaTypes.map((t) => {
-                    const active = filter.mediaTypes.includes(t);
+                    const active = filter.mediaTypes.includes(t) || activeQueryTerms.has(normalizeKey(t));
                     return (
                       <button
                         key={t}
                         type="button"
-                        onClick={() => onChange({ ...filter, mediaTypes: toggleItem(filter.mediaTypes, t) })}
+                        onClick={() => handleToggleChip(t, 'mediaType')}
                         className={`rounded-full px-3 py-1 text-xs font-extrabold transition ${
                           active
                             ? 'casino-chip-pink'
@@ -175,6 +237,12 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
               </div>
             </>
           )}
+
+          <QueryConstructor
+            query={filter.query}
+            metadata={metadata}
+            onChange={(nextQuery) => onChange({ ...filter, query: nextQuery })}
+          />
         </div>
       )}
     </div>
