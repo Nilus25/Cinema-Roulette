@@ -69,6 +69,32 @@ export const api = {
     }),
   logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
   me: () => request<UserDetailsResponse>('/api/auth/me'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<void>('/api/auth/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+  downloadExport: async () => {
+    const res = await fetch(`${BASE}/api/users/me/export`, {
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      throw new Error(`Export failed (HTTP ${res.status})`);
+    }
+    const disposition = res.headers.get('Content-Disposition') ?? '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : 'cinema-roulette-backup.json';
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  },
 
   markSeen: (imdbId: string) =>
     request<UserResponse>(`/api/users/me/seen/${imdbId}`, { method: 'POST' }),

@@ -2,6 +2,7 @@ package com.imdbselector.infrastructure.adapter.in.http;
 
 import com.imdbselector.application.usecase.auth.AuthSession;
 import com.imdbselector.application.usecase.auth.AuthenticateTokenUseCase;
+import com.imdbselector.application.usecase.auth.ChangePasswordUseCase;
 import com.imdbselector.application.usecase.auth.LoginUserUseCase;
 import com.imdbselector.application.usecase.auth.RegisterUserUseCase;
 import com.imdbselector.application.usecase.user.GetUserDetailsUseCase;
@@ -21,6 +22,7 @@ public final class AuthController {
     private final RegisterUserUseCase registerUser;
     private final LoginUserUseCase loginUser;
     private final AuthenticateTokenUseCase authenticateToken;
+    private final ChangePasswordUseCase changePassword;
     private final GetUserDetailsUseCase getUserDetails;
     private final boolean cookieSecure;
 
@@ -28,21 +30,24 @@ public final class AuthController {
             RegisterUserUseCase registerUser,
             LoginUserUseCase loginUser,
             AuthenticateTokenUseCase authenticateToken,
+            ChangePasswordUseCase changePassword,
             GetUserDetailsUseCase getUserDetails
     ) {
-        this(registerUser, loginUser, authenticateToken, getUserDetails, false);
+        this(registerUser, loginUser, authenticateToken, changePassword, getUserDetails, false);
     }
 
     public AuthController(
             RegisterUserUseCase registerUser,
             LoginUserUseCase loginUser,
             AuthenticateTokenUseCase authenticateToken,
+            ChangePasswordUseCase changePassword,
             GetUserDetailsUseCase getUserDetails,
             boolean cookieSecure
     ) {
         this.registerUser = registerUser;
         this.loginUser = loginUser;
         this.authenticateToken = authenticateToken;
+        this.changePassword = changePassword;
         this.getUserDetails = getUserDetails;
         this.cookieSecure = cookieSecure;
     }
@@ -70,6 +75,14 @@ public final class AuthController {
         app.get("/api/auth/me", ctx -> {
             UserId userId = requireAuthenticatedUser(ctx);
             ctx.json(ApiDtos.UserDetailsResponse.from(getUserDetails.execute(userId)));
+        });
+
+        app.post("/api/auth/password", ctx -> {
+            UserId userId = requireAuthenticatedUser(ctx);
+            ApiDtos.ChangePasswordRequest req = ctx.bodyAsClass(ApiDtos.ChangePasswordRequest.class);
+            AuthSession session = changePassword.execute(userId, req.currentPassword(), req.newPassword());
+            setAuthCookie(ctx, session.token());
+            ctx.status(204);
         });
     }
 

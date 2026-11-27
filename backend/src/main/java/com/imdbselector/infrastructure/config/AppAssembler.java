@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.imdbselector.application.usecase.auth.AuthenticateTokenUseCase;
+import com.imdbselector.application.usecase.auth.ChangePasswordUseCase;
 import com.imdbselector.application.usecase.auth.LoginUserUseCase;
 import com.imdbselector.application.usecase.auth.RegisterUserUseCase;
 import com.imdbselector.application.usecase.selection.SelectRandomMediaUseCase;
 import com.imdbselector.application.usecase.user.DeleteUserUseCase;
+import com.imdbselector.application.usecase.user.ExportUserDataUseCase;
 import com.imdbselector.application.usecase.user.GetUserDetailsUseCase;
 import com.imdbselector.application.usecase.user.MarkMediaSeenUseCase;
 import com.imdbselector.application.usecase.user.UnmarkMediaSeenUseCase;
@@ -75,7 +77,10 @@ public final class AppAssembler implements AutoCloseable {
         RegisterUserUseCase registerUser = new RegisterUserUseCase(userRepo, passwordHasher, tokenPort, txManager);
         LoginUserUseCase loginUser = new LoginUserUseCase(userRepo, passwordHasher, tokenPort);
         AuthenticateTokenUseCase authenticateToken = new AuthenticateTokenUseCase(tokenPort);
+        ChangePasswordUseCase changePassword = new ChangePasswordUseCase(userRepo, passwordHasher, tokenPort);
         GetUserDetailsUseCase getUserDetails = new GetUserDetailsUseCase(userRepo, mediaRepo);
+        ExportUserDataUseCase exportUserData = new ExportUserDataUseCase(
+                userRepo, watchlistRepo, subscriptionRepo, mediaRepo, clock);
         DeleteUserUseCase deleteUser = new DeleteUserUseCase(userRepo, watchlistRepo, subscriptionRepo, txManager);
         MarkMediaSeenUseCase markMediaSeen = new MarkMediaSeenUseCase(userRepo);
         UnmarkMediaSeenUseCase unmarkMediaSeen = new UnmarkMediaSeenUseCase(userRepo);
@@ -114,13 +119,13 @@ public final class AppAssembler implements AutoCloseable {
         HttpObservability.register(app);
         SecurityHeaders.register(app);
         RateLimitFilter authRateLimiter = new RateLimitFilter(10, Duration.ofMinutes(1), clock);
-        authRateLimiter.register(app, "/api/auth/login", "/api/auth/register");
+        authRateLimiter.register(app, "/api/auth/login", "/api/auth/register", "/api/auth/password");
         app.get("/api/health", ctx -> ctx.json(Map.of("status", "UP")));
 
         AuthController authController = new AuthController(
-                registerUser, loginUser, authenticateToken, getUserDetails, settings.cookieSecure());
+                registerUser, loginUser, authenticateToken, changePassword, getUserDetails, settings.cookieSecure());
         authController.registerRoutes(app);
-        new UserController(getUserDetails, deleteUser, markMediaSeen, unmarkMediaSeen, authController).registerRoutes(app);
+        new UserController(getUserDetails, exportUserData, deleteUser, markMediaSeen, unmarkMediaSeen, authController).registerRoutes(app);
         new WatchlistController(
                 importWatchlist,
                 previewWatchlistUpdate,
