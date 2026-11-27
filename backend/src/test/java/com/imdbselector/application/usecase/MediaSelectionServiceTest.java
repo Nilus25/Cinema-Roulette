@@ -70,6 +70,37 @@ class MediaSelectionServiceTest {
         assertThat(user.lastGeneratedAt()).isEqualTo(fixedNow);
     }
 
+    @Test
+    void returnsDistinctRandomReelCandidatesFromEligiblePool() {
+        List<MediaItem> pool = List.of(
+                new MediaItem(new ImdbId("tt0000001"), "One", "D1", null, null, MediaType.MOVIE, null, Set.of(Genre.DRAMA), MetadataSource.CSV),
+                new MediaItem(new ImdbId("tt0000002"), "Two", "D2", null, null, MediaType.MOVIE, null, Set.of(Genre.DRAMA), MetadataSource.CSV),
+                new MediaItem(new ImdbId("tt0000003"), "Three", "D3", null, null, MediaType.MOVIE, null, Set.of(Genre.DRAMA), MetadataSource.CSV),
+                new MediaItem(new ImdbId("tt0000004"), "Four", "D4", null, null, MediaType.MOVIE, null, Set.of(Genre.DRAMA), MetadataSource.CSV)
+        );
+        User user = User.create("Nil");
+        Watchlist watchlist = Watchlist.create(user.id(), "All", pool.stream().map(MediaItem::imdbId).toList());
+        TransactionPort noopTx = new TransactionPort() {
+            @Override public <T> T inTransaction(java.util.function.Supplier<T> work) { return work.get(); }
+        };
+        SelectRandomMediaUseCase useCase = new SelectRandomMediaUseCase(
+                new InMemoryWatchlistRepo(watchlist),
+                new NoopSubRepo(),
+                new InMemoryMediaRepo(pool),
+                new InMemoryUserRepo(user),
+                noopTx,
+                new CinemaRoulette(new Random(7)),
+                Clock.fixed(Instant.parse("2026-11-26T12:00:00Z"), ZoneOffset.UTC));
+
+        com.imdbselector.application.usecase.selection.SelectionResult result =
+                useCase.executeWithReel(watchlist.id(), user.id(), FilterCriteria.unfiltered());
+
+        assertThat(result.picked()).isIn(pool);
+        assertThat(result.reelCandidates()).hasSize(3);
+        assertThat(result.reelCandidates()).doesNotContain(result.picked());
+        assertThat(result.reelCandidates()).doesNotHaveDuplicates();
+    }
+
     private static final class InMemoryUserRepo implements UserRepository {
         private final Map<UserId, User> store = new HashMap<>();
         InMemoryUserRepo(User... users) { for (User u : users) store.put(u.id(), u); }

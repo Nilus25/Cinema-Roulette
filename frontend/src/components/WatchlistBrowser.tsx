@@ -72,6 +72,7 @@ export function WatchlistBrowser({
 }: WatchlistBrowserProps) {
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [atBottom, setAtBottom] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const scrollParentRef = useRef<HTMLDivElement | null>(null);
 
@@ -95,6 +96,17 @@ export function WatchlistBrowser({
       onLoadMore();
     }
   }, [virtualRows, items.length, hasMore, loading, loadingMore, onLoadMore]);
+
+  const updateScrollCue = () => {
+    const el = scrollParentRef.current;
+    if (!el) return;
+    const isNearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 8;
+    setAtBottom(isNearBottom);
+  };
+
+  useEffect(() => {
+    updateScrollCue();
+  }, [items.length, totalItems]);
 
   useEffect(() => {
     if (!sortMenuOpen) return;
@@ -235,104 +247,128 @@ export function WatchlistBrowser({
           {loading ? 'Loading watchlist...' : 'No matching titles in this watchlist.'}
         </p>
       ) : (
-        <div ref={scrollParentRef} className="max-h-[420px] overflow-y-auto pr-1">
-          <div
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {virtualRows.map((virtualRow) => {
-              const { item, seen } = items[virtualRow.index];
-              const showOriginal = Boolean(
-                item.originalTitle && item.originalTitle.toLowerCase() !== item.title.toLowerCase(),
-              );
-              return (
-                <div
-                  key={item.imdbId}
-                  ref={rowVirtualizer.measureElement}
-                  data-index={virtualRow.index}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <div className={`film-cell flex items-stretch ${seen ? 'film-cell-seen' : ''}`}>
-                    <div aria-hidden="true" className="film-cell-rail border-r border-orange-500/35" />
+        <div className="space-y-1.5">
+          <div className="relative">
+            <div
+              ref={scrollParentRef}
+              onScroll={updateScrollCue}
+              className="scrollbar-none max-h-[420px] overflow-y-auto"
+            >
+              <div
+                style={{
+                  height: `${rowVirtualizer.getTotalSize()}px`,
+                  width: '100%',
+                  position: 'relative',
+                }}
+              >
+                {virtualRows.map((virtualRow) => {
+                  const { item, seen } = items[virtualRow.index];
+                  const showOriginal = Boolean(
+                    item.originalTitle && item.originalTitle.toLowerCase() !== item.title.toLowerCase(),
+                  );
+                  return (
+                    <div
+                      key={item.imdbId}
+                      ref={rowVirtualizer.measureElement}
+                      data-index={virtualRow.index}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                    >
+                      <div className={`film-cell flex items-stretch ${seen ? 'film-cell-seen' : ''}`}>
+                        <div aria-hidden="true" className="film-cell-rail border-r border-orange-500/35" />
 
-                    <div className="flex min-w-0 flex-1 flex-col gap-1.5 px-3 py-2.5">
-                      <div className="min-w-0">
-                        <a
-                          href={item.imdbUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex max-w-full items-center gap-1.5 text-sm font-bold text-white transition hover:text-[#39FF14]"
-                        >
-                          <span className="truncate">{item.title}</span>
-                          <ExternalLink className="h-3 w-3 shrink-0 text-[#FF9E44]" />
-                        </a>
-                        {showOriginal && (
-                          <p className="truncate text-[11px] italic text-purple-200/55">{item.originalTitle}</p>
-                        )}
-                      </div>
+                        <div className="flex min-w-0 flex-1 flex-col gap-1.5 px-3 py-2.5">
+                          <div className="min-w-0">
+                            <a
+                              href={item.imdbUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex max-w-full items-center gap-1.5 text-sm font-bold text-white transition hover:text-[#39FF14]"
+                            >
+                              <span className="truncate">{item.title}</span>
+                              <ExternalLink className="h-3 w-3 shrink-0 text-[#FF9E44]" />
+                            </a>
+                            {showOriginal && (
+                              <p className="truncate text-[11px] italic text-purple-200/55">{item.originalTitle}</p>
+                            )}
+                          </div>
 
-                      <div className="flex items-end justify-between gap-2">
-                        <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs font-semibold text-orange-100/70">
-                          {item.releaseYear && <span>{item.releaseYear}</span>}
-                          {item.rating !== null && (
-                            <span className="inline-flex items-center gap-0.5 font-extrabold text-[#FFE600]">
-                              <Star className="h-3 w-3 fill-[#FFE600]" />
-                              {item.rating}
-                            </span>
-                          )}
-                          {item.runtimeMinutes !== null && (
-                            <span className="inline-flex items-center gap-0.5 text-[#00E5FF]">
-                              <Clock className="h-3 w-3" />
-                              {formatRuntime(item.runtimeMinutes)}
-                            </span>
-                          )}
-                          {item.numVotes !== null && (
-                            <span className="inline-flex items-center gap-0.5 text-purple-200/70">
-                              <Users className="h-3 w-3" />
-                              {formatVotes(item.numVotes)}
-                            </span>
-                          )}
-                          <span className="text-[#FF5CA8]">{item.mediaType}</span>
-                          {item.director && <span className="truncate">{item.director}</span>}
+                          <div className="flex items-end justify-between gap-2">
+                            <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs font-semibold text-orange-100/70">
+                              {item.releaseYear && <span>{item.releaseYear}</span>}
+                              {item.rating !== null && (
+                                <span className="inline-flex items-center gap-0.5 font-extrabold text-[#FFE600]">
+                                  <Star className="h-3 w-3 fill-[#FFE600]" />
+                                  {item.rating}
+                                </span>
+                              )}
+                              {item.runtimeMinutes !== null && (
+                                <span className="inline-flex items-center gap-0.5 text-[#00E5FF]">
+                                  <Clock className="h-3 w-3" />
+                                  {formatRuntime(item.runtimeMinutes)}
+                                </span>
+                              )}
+                              {item.numVotes !== null && (
+                                <span className="inline-flex items-center gap-0.5 text-purple-200/70">
+                                  <Users className="h-3 w-3" />
+                                  {formatVotes(item.numVotes)}
+                                </span>
+                              )}
+                              <span className="text-[#FF5CA8]">{item.mediaType}</span>
+                              {item.director && <span className="truncate">{item.director}</span>}
+                            </div>
+
+                            {hasUser && (
+                              <button
+                                type="button"
+                                onClick={() => onToggleSeen(item.imdbId, seen)}
+                                className={`inline-flex shrink-0 items-center gap-1.5 rounded border-2 px-2.5 py-0.5 text-xs font-bold transition ${
+                                  seen
+                                    ? 'border-[#39FF14] bg-[#39FF14] text-[#090118]'
+                                    : 'border-[#FF7A00]/60 bg-[#090118] text-orange-100 hover:border-[#39FF14]'
+                                }`}
+                              >
+                                {seen ? <Check className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                                <span>{seen ? 'Seen' : 'Mark'}</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
 
-                        {hasUser && (
-                          <button
-                            type="button"
-                            onClick={() => onToggleSeen(item.imdbId, seen)}
-                            className={`inline-flex shrink-0 items-center gap-1.5 rounded border-2 px-2.5 py-0.5 text-xs font-bold transition ${
-                              seen
-                                ? 'border-[#39FF14] bg-[#39FF14] text-[#090118]'
-                                : 'border-[#FF7A00]/60 bg-[#090118] text-orange-100 hover:border-[#39FF14]'
-                            }`}
-                          >
-                            {seen ? <Check className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                            <span>{seen ? 'Seen' : 'Mark'}</span>
-                          </button>
-                        )}
+                        <div aria-hidden="true" className="film-cell-rail border-l border-orange-500/35" />
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+            </div>
 
-                    <div aria-hidden="true" className="film-cell-rail border-l border-orange-500/35" />
-                  </div>
-                </div>
-              );
-            })}
+            {(hasMore || !atBottom) && (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#1E0B07] via-[#1E0B07]/70 to-transparent"
+              />
+            )}
           </div>
 
-          {loadingMore && (
-            <p className="py-2 text-center font-mono text-[11px] font-bold text-[#FFE600]">
+          {loadingMore ? (
+            <p className="py-1 text-center font-mono text-[11px] font-bold text-[#FFE600]">
               Loading next reel...
             </p>
+          ) : (
+            (hasMore || !atBottom) && (
+              <div className="flex items-center justify-center gap-1 pt-0.5 font-mono text-[10px] font-bold text-orange-200/65">
+                <ChevronDown className="h-3 w-3 animate-bounce text-[#FF9E44]" />
+                <span>
+                  Scroll for more ({items.length} / {totalItems})
+                </span>
+              </div>
+            )
           )}
         </div>
       )}

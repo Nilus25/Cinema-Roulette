@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Objects;
 
 public final class SelectRandomMediaUseCase {
+    public static final int DEFAULT_REEL_SAMPLE_SIZE = 24;
+
     private final WatchlistRepository watchlistRepository;
     private final WatchlistSubscriptionRepository subscriptionRepository;
     private final MediaItemRepository mediaItemRepository;
@@ -48,6 +50,10 @@ public final class SelectRandomMediaUseCase {
     }
 
     public MediaItem execute(WatchlistId watchlistId, UserId actorId, FilterCriteria criteria) {
+        return executeWithReel(watchlistId, actorId, criteria).picked();
+    }
+
+    public SelectionResult executeWithReel(WatchlistId watchlistId, UserId actorId, FilterCriteria criteria) {
         return transactionPort.inTransaction(() -> {
             Watchlist watchlist = watchlistRepository.findById(watchlistId)
                     .orElseThrow(() -> new ResourceNotFoundException("Watchlist not found: " + watchlistId.value()));
@@ -68,9 +74,11 @@ public final class SelectRandomMediaUseCase {
                     : new SelectionMode.Random();
 
             MediaItem picked = roulette.spin(filtered, mode);
+            List<MediaItem> reelCandidates = roulette.sampleReelCandidates(
+                    filtered, mode, picked.imdbId(), DEFAULT_REEL_SAMPLE_SIZE);
             user.recordGenerated(picked.imdbId(), clock.instant());
             userRepository.save(user);
-            return picked;
+            return new SelectionResult(picked, reelCandidates);
         });
     }
 }

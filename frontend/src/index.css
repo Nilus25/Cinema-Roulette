@@ -1,6 +1,15 @@
 @import "tailwindcss";
 
 @layer base {
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     min-height: 100vh;

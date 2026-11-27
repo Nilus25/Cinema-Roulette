@@ -61,6 +61,11 @@ export interface PagedWatchlistItemsResponse {
   topGenre: string | null;
 }
 
+export interface SelectionResponse {
+  picked: MediaItemResponse;
+  reelCandidates: MediaItemResponse[];
+}
+
 export interface WatchlistUpdatePreviewResponse {
   added: MediaItemResponse[];
   removed: MediaItemResponse[];
