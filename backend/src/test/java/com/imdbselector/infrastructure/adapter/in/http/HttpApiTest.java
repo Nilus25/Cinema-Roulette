@@ -14,6 +14,7 @@ import com.imdbselector.application.usecase.user.ExportUserDataUseCase;
 import com.imdbselector.application.usecase.user.GetUserDetailsUseCase;
 import com.imdbselector.application.usecase.user.MarkMediaSeenUseCase;
 import com.imdbselector.application.usecase.user.UnmarkMediaSeenUseCase;
+import com.imdbselector.application.usecase.user.UpdateQueryFlavorUseCase;
 import com.imdbselector.domain.model.MediaItem;
 import com.imdbselector.domain.model.User;
 import com.imdbselector.domain.model.Watchlist;
@@ -86,6 +87,7 @@ class HttpApiTest {
         new UserController(
                 getDetails,
                 new ExportUserDataUseCase(userRepo, emptyWlRepo, emptySubRepo, mediaRepo, Clock.systemUTC()),
+                new UpdateQueryFlavorUseCase(userRepo),
                 new DeleteUserUseCase(userRepo, emptyWlRepo, emptySubRepo, noopTx),
                 new MarkMediaSeenUseCase(userRepo),
                 new UnmarkMediaSeenUseCase(userRepo),
@@ -127,8 +129,18 @@ class HttpApiTest {
                     HttpResponse.BodyHandlers.ofString());
             assertThat(me.statusCode()).isEqualTo(200);
             assertThat(me.body()).contains("\"name\":\"Nil\"");
+            assertThat(me.body()).contains("\"queryFlavor\":\"NETFLIX_AND_CHILL\"");
             assertThat(me.headers().firstValue("X-Content-Type-Options")).contains("nosniff");
             assertThat(me.headers().firstValue("X-Frame-Options")).contains("DENY");
+
+            HttpResponse<String> prefRes = client.send(
+                    HttpRequest.newBuilder(URI.create(base + "/api/users/me/preferences"))
+                            .header("Content-Type", "application/json")
+                            .method("PATCH", HttpRequest.BodyPublishers.ofString("{\"queryFlavor\":\"CINEPHILE\"}"))
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertThat(prefRes.statusCode()).isEqualTo(200);
+            assertThat(prefRes.body()).contains("\"queryFlavor\":\"CINEPHILE\"");
 
             // Authenticated /api/users/me/export -> 200 JSON backup without passwordHash
             HttpResponse<String> exportRes = client.send(

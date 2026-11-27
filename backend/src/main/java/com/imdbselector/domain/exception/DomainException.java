@@ -8,6 +8,7 @@ public abstract sealed class DomainException extends RuntimeException
                 ResourceNotFoundException,
                 NoMatchingMediaException,
                 InvalidCsvException,
+                InvalidQueryException,
                 UnauthorizedException,
                 ForbiddenException {
 

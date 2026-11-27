@@ -5,9 +5,11 @@ import com.imdbselector.application.usecase.user.ExportUserDataUseCase;
 import com.imdbselector.application.usecase.user.GetUserDetailsUseCase;
 import com.imdbselector.application.usecase.user.MarkMediaSeenUseCase;
 import com.imdbselector.application.usecase.user.UnmarkMediaSeenUseCase;
+import com.imdbselector.application.usecase.user.UpdateQueryFlavorUseCase;
 import com.imdbselector.application.usecase.user.UserExportData;
 import com.imdbselector.domain.model.User;
 import com.imdbselector.domain.valueobject.ImdbId;
+import com.imdbselector.domain.valueobject.QueryFlavor;
 import com.imdbselector.domain.valueobject.UserId;
 import io.javalin.Javalin;
 
@@ -17,6 +19,7 @@ import java.time.ZoneOffset;
 public final class UserController {
     private final GetUserDetailsUseCase getUserDetails;
     private final ExportUserDataUseCase exportUserData;
+    private final UpdateQueryFlavorUseCase updateQueryFlavor;
     private final DeleteUserUseCase deleteUser;
     private final MarkMediaSeenUseCase markMediaSeen;
     private final UnmarkMediaSeenUseCase unmarkMediaSeen;
@@ -25,6 +28,7 @@ public final class UserController {
     public UserController(
             GetUserDetailsUseCase getUserDetails,
             ExportUserDataUseCase exportUserData,
+            UpdateQueryFlavorUseCase updateQueryFlavor,
             DeleteUserUseCase deleteUser,
             MarkMediaSeenUseCase markMediaSeen,
             UnmarkMediaSeenUseCase unmarkMediaSeen,
@@ -32,6 +36,7 @@ public final class UserController {
     ) {
         this.getUserDetails = getUserDetails;
         this.exportUserData = exportUserData;
+        this.updateQueryFlavor = updateQueryFlavor;
         this.deleteUser = deleteUser;
         this.markMediaSeen = markMediaSeen;
         this.unmarkMediaSeen = unmarkMediaSeen;
@@ -42,6 +47,17 @@ public final class UserController {
         app.get("/api/users/me", ctx -> {
             UserId userId = authController.requireAuthenticatedUser(ctx);
             ctx.json(ApiDtos.UserDetailsResponse.from(getUserDetails.execute(userId)));
+        });
+
+        app.patch("/api/users/me/preferences", ctx -> {
+            UserId userId = authController.requireAuthenticatedUser(ctx);
+            ApiDtos.UpdatePreferencesRequest req = ctx.bodyAsClass(ApiDtos.UpdatePreferencesRequest.class);
+            if (req.queryFlavor() == null || req.queryFlavor().isBlank()) {
+                throw new IllegalArgumentException("queryFlavor must not be blank");
+            }
+            QueryFlavor flavor = QueryFlavor.fromString(req.queryFlavor());
+            User updated = updateQueryFlavor.execute(userId, flavor);
+            ctx.json(ApiDtos.UserResponse.from(updated));
         });
 
         app.get("/api/users/me/export", ctx -> {

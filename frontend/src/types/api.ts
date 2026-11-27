@@ -1,17 +1,23 @@
+export type QueryFlavor = 'NETFLIX_AND_CHILL' | 'MOVIE_GEEK' | 'CINEPHILE' | 'VO_ENTHUSIAST';
+
 export interface UserResponse {
   id: string;
   name: string;
   lastGeneratedImdbId: string | null;
   lastGeneratedAt: string | null;
   seenCount: number;
+  queryFlavor: QueryFlavor;
 }
 
 export interface MediaItemResponse {
   imdbId: string;
   title: string;
+  originalTitle: string | null;
   director: string;
   releaseYear: number | null;
   rating: number | null;
+  runtimeMinutes: number | null;
+  numVotes: number | null;
   mediaType: string;
   imdbUrl: string;
   genres: string[];
@@ -20,6 +26,7 @@ export interface MediaItemResponse {
 export interface UserDetailsResponse {
   id: string;
   name: string;
+  queryFlavor: QueryFlavor;
   unseenLastGeneratedPrompt: MediaItemResponse | null;
   seenItems: MediaItemResponse[];
 }
@@ -42,6 +49,18 @@ export interface WatchlistItemResponse {
   seen: boolean;
 }
 
+export interface PagedWatchlistItemsResponse {
+  items: WatchlistItemResponse[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+  hasMore: boolean;
+  unseenCount: number;
+  avgRating: number | null;
+  topGenre: string | null;
+}
+
 export interface WatchlistUpdatePreviewResponse {
   added: MediaItemResponse[];
   removed: MediaItemResponse[];
@@ -59,13 +78,21 @@ export interface FilterMetadata {
   minYear: number;
 }
 
+export type SortBy = 'DEFAULT' | 'RATING' | 'YEAR' | 'RUNTIME' | 'VOTES' | 'TITLE' | 'UNSEEN';
+export type SortDirection = 'ASC' | 'DESC';
+
 export interface FilterState {
   minRating: string;
   maxRating: string;
   minYear: string;
   maxYear: string;
+  minRuntime: string;
+  maxRuntime: string;
+  minVotes: string;
+  maxVotes: string;
   genres: string[];
   mediaTypes: string[];
   keywords: string;
   excludeSeen: boolean;
+  query: string;
 }

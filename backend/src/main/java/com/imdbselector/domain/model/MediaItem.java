@@ -8,6 +8,8 @@ import com.imdbselector.domain.valueobject.MetadataSource;
 import com.imdbselector.domain.valueobject.Rating;
 import com.imdbselector.domain.valueobject.ReleaseYear;
 
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -18,9 +20,12 @@ import java.util.Set;
 public record MediaItem(
         ImdbId imdbId,
         String title,
+        String originalTitle,
         String director,
         ReleaseYear releaseYear,
         Rating rating,
+        Integer runtimeMinutes,
+        Integer numVotes,
         MediaType mediaType,
         String imdbUrl,
         Set<Genre> genres,
@@ -31,26 +36,54 @@ public record MediaItem(
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("title must not be blank");
         }
+        if (runtimeMinutes != null && runtimeMinutes < 0) {
+            throw new IllegalArgumentException("runtimeMinutes must be >= 0");
+        }
+        if (numVotes != null && numVotes < 0) {
+            throw new IllegalArgumentException("numVotes must be >= 0");
+        }
         title = title.trim();
+        originalTitle = (originalTitle == null || originalTitle.isBlank()) ? null : originalTitle.trim();
         director = director == null ? "" : director.trim();
         mediaType = mediaType == null ? MediaType.OTHER : mediaType;
         imdbUrl = imdbUrl == null || imdbUrl.isBlank()
                 ? "https://www.imdb.com/title/" + imdbId.value() + "/"
                 : imdbUrl.trim();
-        genres = genres == null ? Set.of() : Set.copyOf(genres);
+        genres = (genres == null || genres.isEmpty())
+                ? Set.of()
+                : Collections.unmodifiableSet(EnumSet.copyOf(genres));
         source = source == null ? MetadataSource.CSV : source;
     }
 
-    /**
-     * Evaluates whether this media item satisfies the given FilterCriteria.
-     */
+    public MediaItem(
+            ImdbId imdbId,
+            String title,
+            String director,
+            ReleaseYear releaseYear,
+            Rating rating,
+            MediaType mediaType,
+            String imdbUrl,
+            Set<Genre> genres,
+            MetadataSource source
+    ) {
+        this(imdbId, title, null, director, releaseYear, rating, null, null, mediaType, imdbUrl, genres, source);
+    }
+
     public boolean matches(FilterCriteria criteria) {
+        return matches(criteria, false);
+    }
+
+    public boolean matches(FilterCriteria criteria, boolean seen) {
         FilterCriteria effective = criteria == null ? FilterCriteria.unfiltered() : criteria;
         return matchesRating(effective)
                 && matchesYear(effective)
+                && matchesRuntime(effective)
+                && matchesVotes(effective)
                 && matchesGenres(effective)
                 && matchesMediaTypes(effective)
-                && matchesKeywords(effective);
+                && matchesKeywords(effective)
+                && matchesQuickSearch(effective)
+                && matchesQuery(effective, seen);
     }
 
     private boolean matchesRating(FilterCriteria criteria) {
@@ -79,6 +112,32 @@ public record MediaItem(
         return criteria.maxYear() == null || releaseYear.compareTo(criteria.maxYear()) <= 0;
     }
 
+    private boolean matchesRuntime(FilterCriteria criteria) {
+        if (criteria.minRuntime() == null && criteria.maxRuntime() == null) {
+            return true;
+        }
+        if (runtimeMinutes == null) {
+            return false;
+        }
+        if (criteria.minRuntime() != null && runtimeMinutes < criteria.minRuntime()) {
+            return false;
+        }
+        return criteria.maxRuntime() == null || runtimeMinutes <= criteria.maxRuntime();
+    }
+
+    private boolean matchesVotes(FilterCriteria criteria) {
+        if (criteria.minVotes() == null && criteria.maxVotes() == null) {
+            return true;
+        }
+        if (numVotes == null) {
+            return false;
+        }
+        if (criteria.minVotes() != null && numVotes < criteria.minVotes()) {
+            return false;
+        }
+        return criteria.maxVotes() == null || numVotes <= criteria.maxVotes();
+    }
+
     private boolean matchesGenres(FilterCriteria criteria) {
         return criteria.genres().isEmpty() || genres.stream().anyMatch(criteria.genres()::contains);
     }
@@ -91,10 +150,25 @@ public record MediaItem(
         if (criteria.keywords().isEmpty()) {
             return true;
         }
-        String titleLower = title.toLowerCase(Locale.ROOT);
-        String directorLower = director.toLowerCase(Locale.ROOT);
         return criteria.keywords().stream()
                 .map(k -> k.toLowerCase(Locale.ROOT))
-                .anyMatch(k -> titleLower.contains(k) || directorLower.contains(k));
+                .anyMatch(this::containsLowerNeedle);
+    }
+
+    private boolean matchesQuickSearch(FilterCriteria criteria) {
+        if (criteria.quickSearch() == null || criteria.quickSearch().isBlank()) {
+            return true;
+        }
+        return containsLowerNeedle(criteria.quickSearch().toLowerCase(Locale.ROOT));
+    }
+
+    private boolean containsLowerNeedle(String needleLower) {
+        return title.toLowerCase(Locale.ROOT).contains(needleLower)
+                || (originalTitle != null && originalTitle.toLowerCase(Locale.ROOT).contains(needleLower))
+                || director.toLowerCase(Locale.ROOT).contains(needleLower);
+    }
+
+    private boolean matchesQuery(FilterCriteria criteria, boolean seen) {
+        return criteria.compiledQuery() == null || criteria.compiledQuery().evaluate(this, seen);
     }
 }

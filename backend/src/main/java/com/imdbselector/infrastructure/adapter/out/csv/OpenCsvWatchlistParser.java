@@ -43,9 +43,12 @@ public final class OpenCsvWatchlistParser implements CsvWatchlistParserPort {
                     continue;
                 }
                 ImdbId imdbId = new ImdbId(rawId);
+                String originalTitle = blankToNull(firstPresent(row, "Original Title", "original_title"));
                 String director = nullToEmpty(firstPresent(row, "Directors", "Director"));
                 ReleaseYear year = parseYear(firstPresent(row, "Year"));
                 Rating rating = parseRating(firstPresent(row, "IMDb Rating", "Rating"));
+                Integer runtimeMinutes = parseNonNegativeInt(firstPresent(row, "Runtime (mins)", "Runtime"));
+                Integer numVotes = parseNonNegativeInt(firstPresent(row, "Num Votes", "Votes"));
                 MediaType mediaType = MediaType.fromLabel(firstPresent(row, "Title Type", "Type"));
                 String url = firstPresent(row, "URL", "url");
                 Set<Genre> genres = parseGenres(firstPresent(row, "Genres", "Genre"));
@@ -53,9 +56,12 @@ public final class OpenCsvWatchlistParser implements CsvWatchlistParserPort {
                 items.add(new MediaItem(
                         imdbId,
                         rawTitle,
+                        originalTitle,
                         director,
                         year,
                         rating,
+                        runtimeMinutes,
+                        numVotes,
                         mediaType,
                         url,
                         genres,
@@ -86,6 +92,13 @@ public final class OpenCsvWatchlistParser implements CsvWatchlistParserPort {
         return value == null ? "" : value.trim();
     }
 
+    private static String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
     private static ReleaseYear parseYear(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;
@@ -102,8 +115,20 @@ public final class OpenCsvWatchlistParser implements CsvWatchlistParserPort {
             return null;
         }
         try {
-            return Rating.of(raw);
+            return Rating.of(raw.trim());
         } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static Integer parseNonNegativeInt(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            int parsed = Integer.parseInt(raw.trim());
+            return parsed >= 0 ? parsed : null;
+        } catch (NumberFormatException e) {
             return null;
         }
     }

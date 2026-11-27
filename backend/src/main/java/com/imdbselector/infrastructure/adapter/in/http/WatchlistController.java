@@ -6,6 +6,7 @@ import com.imdbselector.application.usecase.watchlist.GetWatchlistItemsUseCase;
 import com.imdbselector.application.usecase.watchlist.ImportWatchlistUseCase;
 import com.imdbselector.application.usecase.watchlist.ListAccessibleWatchlistsUseCase;
 import com.imdbselector.application.usecase.watchlist.ListPublicWatchlistsUseCase;
+import com.imdbselector.application.usecase.watchlist.PagedWatchlistItems;
 import com.imdbselector.application.usecase.watchlist.PreviewWatchlistUpdateUseCase;
 import com.imdbselector.application.usecase.watchlist.SubscribeWatchlistUseCase;
 import com.imdbselector.application.usecase.watchlist.UnsubscribeWatchlistUseCase;
@@ -18,6 +19,8 @@ import com.imdbselector.domain.valueobject.ImdbId;
 import com.imdbselector.domain.valueobject.MediaType;
 import com.imdbselector.domain.valueobject.Rating;
 import com.imdbselector.domain.valueobject.ReleaseYear;
+import com.imdbselector.domain.valueobject.SortBy;
+import com.imdbselector.domain.valueobject.SortDirection;
 import com.imdbselector.domain.valueobject.UserId;
 import com.imdbselector.domain.valueobject.WatchlistDiff;
 import com.imdbselector.domain.valueobject.WatchlistId;
@@ -172,17 +175,27 @@ public final class WatchlistController {
                     ctx.queryParam("maxRating"),
                     ctx.queryParam("minYear"),
                     ctx.queryParam("maxYear"),
+                    ctx.queryParam("minRuntime"),
+                    ctx.queryParam("maxRuntime"),
+                    ctx.queryParam("minVotes"),
+                    ctx.queryParam("maxVotes"),
                     ctx.queryParam("genres"),
                     ctx.queryParam("mediaTypes"),
                     ctx.queryParam("keywords"),
-                    Boolean.parseBoolean(ctx.queryParam("excludeSeen"))
+                    Boolean.parseBoolean(ctx.queryParam("excludeSeen")),
+                    ctx.queryParam("query"),
+                    ctx.queryParam("quickSearch")
             );
+            SortBy sortBy = SortBy.fromString(ctx.queryParam("sortBy"));
+            SortDirection sortDir = SortDirection.fromString(ctx.queryParam("sortDir"), null);
+            Integer pageParam = parseOptionalInt("page", ctx.queryParam("page"));
+            Integer sizeParam = parseOptionalInt("size", ctx.queryParam("size"));
+            int page = pageParam == null ? 0 : pageParam;
+            int size = sizeParam == null ? GetWatchlistItemsUseCase.DEFAULT_PAGE_SIZE : sizeParam;
 
-            List<ApiDtos.WatchlistItemResponse> items = getWatchlistItems.execute(userId, watchlistId, criteria)
-                    .stream()
-                    .map(ApiDtos.WatchlistItemResponse::from)
-                    .toList();
-            ctx.json(items);
+            PagedWatchlistItems result = getWatchlistItems.executePaged(
+                    userId, watchlistId, criteria, sortBy, sortDir, page, size);
+            ctx.json(ApiDtos.PagedWatchlistItemsResponse.from(result));
         });
 
         app.delete("/api/watchlists/{watchlistId}", ctx -> {
@@ -198,21 +211,46 @@ public final class WatchlistController {
             String maxRating,
             String minYear,
             String maxYear,
+            String minRuntime,
+            String maxRuntime,
+            String minVotes,
+            String maxVotes,
             String genres,
             String mediaTypes,
             String keywords,
-            boolean excludeSeen
+            boolean excludeSeen,
+            String query,
+            String quickSearch
     ) {
         Rating minR = (minRating == null || minRating.isBlank()) ? null : Rating.of(minRating);
         Rating maxR = (maxRating == null || maxRating.isBlank()) ? null : Rating.of(maxRating);
-        ReleaseYear minY = (minYear == null || minYear.isBlank()) ? null : new ReleaseYear(Integer.parseInt(minYear.trim()));
-        ReleaseYear maxY = (maxYear == null || maxYear.isBlank()) ? null : new ReleaseYear(Integer.parseInt(maxYear.trim()));
+        ReleaseYear minY = (minYear == null || minYear.isBlank()) ? null : new ReleaseYear(parseIntParam("minYear", minYear));
+        ReleaseYear maxY = (maxYear == null || maxYear.isBlank()) ? null : new ReleaseYear(parseIntParam("maxYear", maxYear));
+        Integer minRt = parseOptionalInt("minRuntime", minRuntime);
+        Integer maxRt = parseOptionalInt("maxRuntime", maxRuntime);
+        Integer minV = parseOptionalInt("minVotes", minVotes);
+        Integer maxV = parseOptionalInt("maxVotes", maxVotes);
 
         Set<Genre> genreSet = splitCsv(genres).stream().map(Genre::fromLabel).collect(Collectors.toSet());
         Set<MediaType> typeSet = splitCsv(mediaTypes).stream().map(MediaType::fromLabel).collect(Collectors.toSet());
         List<String> keywordList = splitCsv(keywords);
 
-        return new FilterCriteria(minR, maxR, minY, maxY, genreSet, typeSet, keywordList, excludeSeen);
+        return new FilterCriteria(minR, maxR, minY, maxY, minRt, maxRt, minV, maxV, genreSet, typeSet, keywordList, excludeSeen, query, quickSearch);
+    }
+
+    private static Integer parseOptionalInt(String paramName, String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        return parseIntParam(paramName, raw);
+    }
+
+    private static int parseIntParam(String paramName, String raw) {
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid integer for '" + paramName + "': " + raw);
+        }
     }
 
     private static List<String> splitCsv(String raw) {

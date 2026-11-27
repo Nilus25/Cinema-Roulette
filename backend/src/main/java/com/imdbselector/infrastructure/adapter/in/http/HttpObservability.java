@@ -4,6 +4,7 @@ import com.imdbselector.domain.exception.DomainException;
 import com.imdbselector.domain.exception.DuplicateResourceException;
 import com.imdbselector.domain.exception.ForbiddenException;
 import com.imdbselector.domain.exception.InvalidCsvException;
+import com.imdbselector.domain.exception.InvalidQueryException;
 import com.imdbselector.domain.exception.NoMatchingMediaException;
 import com.imdbselector.domain.exception.ResourceNotFoundException;
 import com.imdbselector.domain.exception.UnauthorizedException;
@@ -55,6 +56,7 @@ public final class HttpObservability {
                 case NoMatchingMediaException ex -> problem(404, "No Matching Media", "NO_MATCHING_MEDIA", ex.getMessage(), traceId);
                 case DuplicateResourceException ex -> problem(409, "Conflict", "CONFLICT", ex.getMessage(), traceId);
                 case InvalidCsvException ex -> problem(400, "Invalid CSV", "INVALID_CSV", ex.getMessage(), traceId);
+                case InvalidQueryException ex -> problem(400, "Invalid Query", "INVALID_QUERY", ex.getMessage(), traceId);
                 case UnauthorizedException ex -> problem(401, "Unauthorized", "UNAUTHORIZED", ex.getMessage(), traceId);
                 case ForbiddenException ex -> problem(403, "Forbidden", "FORBIDDEN", ex.getMessage(), traceId);
             };

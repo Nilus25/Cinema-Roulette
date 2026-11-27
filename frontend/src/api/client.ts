@@ -2,9 +2,12 @@ import type {
   FilterMetadata,
   FilterState,
   MediaItemResponse,
+  PagedWatchlistItemsResponse,
+  QueryFlavor,
+  SortBy,
+  SortDirection,
   UserDetailsResponse,
   UserResponse,
-  WatchlistItemResponse,
   WatchlistResponse,
   WatchlistUpdateApplyOptions,
   WatchlistUpdatePreviewResponse,
@@ -39,16 +42,35 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-function buildFilterParams(filter: FilterState): URLSearchParams {
+function buildFilterParams(
+  filter: FilterState,
+  sortBy?: SortBy,
+  sortDir?: SortDirection,
+  page?: number,
+  size?: number,
+  quickSearch?: string,
+): URLSearchParams {
   const params = new URLSearchParams();
   if (filter.minRating) params.set('minRating', filter.minRating);
   if (filter.maxRating) params.set('maxRating', filter.maxRating);
   if (filter.minYear) params.set('minYear', filter.minYear);
   if (filter.maxYear) params.set('maxYear', filter.maxYear);
+  if (filter.minRuntime) params.set('minRuntime', filter.minRuntime);
+  if (filter.maxRuntime) params.set('maxRuntime', filter.maxRuntime);
+  if (filter.minVotes) params.set('minVotes', filter.minVotes);
+  if (filter.maxVotes) params.set('maxVotes', filter.maxVotes);
   if (filter.genres.length > 0) params.set('genres', filter.genres.join(','));
   if (filter.mediaTypes.length > 0) params.set('mediaTypes', filter.mediaTypes.join(','));
   if (filter.keywords.trim()) params.set('keywords', filter.keywords.trim());
   if (filter.excludeSeen) params.set('excludeSeen', 'true');
+  if (filter.query.trim()) params.set('query', filter.query.trim());
+  if (quickSearch && quickSearch.trim()) params.set('quickSearch', quickSearch.trim());
+  if (sortBy && sortBy !== 'DEFAULT') {
+    params.set('sortBy', sortBy);
+    if (sortDir) params.set('sortDir', sortDir);
+  }
+  if (page !== undefined) params.set('page', String(page));
+  if (size !== undefined) params.set('size', String(size));
   return params;
 }
 
@@ -69,6 +91,12 @@ export const api = {
     }),
   logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
   me: () => request<UserDetailsResponse>('/api/auth/me'),
+  updatePreferences: (queryFlavor: QueryFlavor) =>
+    request<UserResponse>('/api/users/me/preferences', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ queryFlavor }),
+    }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<void>('/api/auth/password', {
       method: 'POST',
@@ -153,9 +181,17 @@ export const api = {
   deleteWatchlist: (watchlistId: string) =>
     request<void>(`/api/watchlists/${watchlistId}`, { method: 'DELETE' }),
 
-  getWatchlistItems: (watchlistId: string, filter: FilterState) => {
-    const qs = buildFilterParams(filter).toString();
-    return request<WatchlistItemResponse[]>(`/api/watchlists/${watchlistId}/items${qs ? `?${qs}` : ''}`);
+  getWatchlistItems: (
+    watchlistId: string,
+    filter: FilterState,
+    sortBy?: SortBy,
+    sortDir?: SortDirection,
+    page = 0,
+    size = 40,
+    quickSearch?: string,
+  ) => {
+    const qs = buildFilterParams(filter, sortBy, sortDir, page, size, quickSearch).toString();
+    return request<PagedWatchlistItemsResponse>(`/api/watchlists/${watchlistId}/items${qs ? `?${qs}` : ''}`);
   },
 
   selectRandom: (watchlistId: string, filter: FilterState) =>
@@ -167,6 +203,10 @@ export const api = {
         maxRating: filter.maxRating ? Number(filter.maxRating) : null,
         minYear: filter.minYear ? Number(filter.minYear) : null,
         maxYear: filter.maxYear ? Number(filter.maxYear) : null,
+        minRuntime: filter.minRuntime ? Number(filter.minRuntime) : null,
+        maxRuntime: filter.maxRuntime ? Number(filter.maxRuntime) : null,
+        minVotes: filter.minVotes ? Number(filter.minVotes) : null,
+        maxVotes: filter.maxVotes ? Number(filter.maxVotes) : null,
         genres: filter.genres,
         mediaTypes: filter.mediaTypes,
         keywords: filter.keywords
@@ -174,6 +214,7 @@ export const api = {
           .map((k) => k.trim())
           .filter(Boolean),
         excludeSeen: filter.excludeSeen,
+        query: filter.query.trim() || null,
       }),
     }),
 };

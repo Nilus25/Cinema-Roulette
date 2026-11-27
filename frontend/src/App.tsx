@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { Clapperboard, Film, ListVideo, User } from 'lucide-react';
 import { api } from './api/client';
@@ -10,10 +10,13 @@ import { ProfileBar } from './components/ProfileBar';
 import { UpdateDiffModal } from './components/UpdateDiffModal';
 import { WatchlistBar } from './components/WatchlistBar';
 import { WatchlistBrowser } from './components/WatchlistBrowser';
+import { validateQuerySyntax } from './utils/queryBuilder';
 import type {
   FilterMetadata,
   FilterState,
   MediaItemResponse,
+  SortBy,
+  SortDirection,
   UserDetailsResponse,
   WatchlistItemResponse,
   WatchlistResponse,
@@ -26,10 +29,15 @@ const EMPTY_FILTER: FilterState = {
   maxRating: '',
   minYear: '',
   maxYear: '',
+  minRuntime: '',
+  maxRuntime: '',
+  minVotes: '',
+  maxVotes: '',
   genres: [],
   mediaTypes: [],
   keywords: '',
   excludeSeen: false,
+  query: '',
 };
 
 function fireRainbowConfetti() {
@@ -80,11 +88,23 @@ export function App() {
   const [publicWatchlists, setPublicWatchlists] = useState<WatchlistResponse[]>([]);
   const [selectedWatchlistId, setSelectedWatchlistId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterState>(EMPTY_FILTER);
+  const [sortBy, setSortBy] = useState<SortBy>('DEFAULT');
+  const [sortDir, setSortDir] = useState<SortDirection>('DESC');
 
   const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState<MediaItemResponse | null>(null);
   const [picked, setPicked] = useState<MediaItemResponse | null>(null);
   const [items, setItems] = useState<WatchlistItemResponse[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [unseenCount, setUnseenCount] = useState(0);
+  const [avgRating, setAvgRating] = useState<number | null>(null);
+  const [topGenre, setTopGenre] = useState<string | null>(null);
+  const [quickSearch, setQuickSearch] = useState('');
+  const [debouncedQuickSearch, setDebouncedQuickSearch] = useState('');
   const [loadingItems, setLoadingItems] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const fetchEpochRef = useRef(0);
   const [picking, setPicking] = useState(false);
   const [reelSpinning, setReelSpinning] = useState(false);
   const [reelSpinKey, setReelSpinKey] = useState(0);
@@ -151,26 +171,145 @@ export function App() {
     setSelectedWatchlistId(match ? match.id : watchlists[0].id);
   }, [userDetails, watchlists, selectedWatchlistId]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedQuickSearch(quickSearch);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [quickSearch]);
+
+  const queryValidation = useMemo(
+    () => validateQuerySyntax(filter.query, metadata),
+    [filter.query, metadata],
+  );
+
   const loadItems = useCallback(async () => {
     if (!userDetails || !selectedWatchlistId) {
       setItems([]);
+      setPage(0);
+      setTotalItems(0);
+      setHasMore(false);
+      setUnseenCount(0);
+      setAvgRating(null);
+      setTopGenre(null);
       return;
     }
+    if (filter.query.trim() && !queryValidation.valid) {
+      return;
+    }
+    const epoch = ++fetchEpochRef.current;
     setLoadingItems(true);
     try {
-      const data = await api.getWatchlistItems(selectedWatchlistId, filter);
-      setItems(data);
+      const data = await api.getWatchlistItems(
+        selectedWatchlistId,
+        filter,
+        sortBy,
+        sortDir,
+        0,
+        40,
+        debouncedQuickSearch,
+      );
+      if (epoch !== fetchEpochRef.current) return;
+      setItems(data.items);
+      setPage(data.page);
+      setTotalItems(data.totalItems);
+      setHasMore(data.hasMore);
+      setUnseenCount(data.unseenCount);
+      setAvgRating(data.avgRating);
+      setTopGenre(data.topGenre);
       setError(null);
     } catch (e) {
+      if (epoch !== fetchEpochRef.current) return;
       setError((e as Error).message);
     } finally {
-      setLoadingItems(false);
+      if (epoch === fetchEpochRef.current) {
+        setLoadingItems(false);
+      }
     }
-  }, [userDetails, selectedWatchlistId, filter]);
+  }, [userDetails, selectedWatchlistId, filter, sortBy, sortDir, debouncedQuickSearch, queryValidation.valid]);
+
+  const loadMoreItems = useCallback(async () => {
+    if (!userDetails || !selectedWatchlistId || !hasMore || loadingItems || loadingMore) {
+      return;
+    }
+    if (filter.query.trim() && !queryValidation.valid) {
+      return;
+    }
+    const epoch = fetchEpochRef.current;
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    try {
+      const data = await api.getWatchlistItems(
+        selectedWatchlistId,
+        filter,
+        sortBy,
+        sortDir,
+        nextPage,
+        40,
+        debouncedQuickSearch,
+      );
+      if (epoch !== fetchEpochRef.current) return;
+      setItems((prev) => {
+        const existingIds = new Set(prev.map((row) => row.item.imdbId));
+        const fresh = data.items.filter((row) => !existingIds.has(row.item.imdbId));
+        return [...prev, ...fresh];
+      });
+      setPage(data.page);
+      setTotalItems(data.totalItems);
+      setHasMore(data.hasMore);
+      setUnseenCount(data.unseenCount);
+      setAvgRating(data.avgRating);
+      setTopGenre(data.topGenre);
+    } catch (e) {
+      if (epoch === fetchEpochRef.current) {
+        setError((e as Error).message);
+      }
+    } finally {
+      if (epoch === fetchEpochRef.current) {
+        setLoadingMore(false);
+      }
+    }
+  }, [
+    userDetails,
+    selectedWatchlistId,
+    hasMore,
+    loadingItems,
+    loadingMore,
+    page,
+    filter,
+    sortBy,
+    sortDir,
+    debouncedQuickSearch,
+    queryValidation.valid,
+  ]);
 
   useEffect(() => {
     loadItems();
   }, [loadItems]);
+
+  const handleToggleSeen = useCallback(
+    async (imdbId: string, currentlySeen: boolean) => {
+      if (currentlySeen) {
+        await api.unmarkSeen(imdbId);
+      } else {
+        await api.markSeen(imdbId);
+      }
+      await refreshMe();
+      setItems((prev) => {
+        if (filter.excludeSeen && !currentlySeen) {
+          return prev.filter((row) => row.item.imdbId !== imdbId);
+        }
+        return prev.map((row) =>
+          row.item.imdbId === imdbId ? { ...row, seen: !currentlySeen } : row,
+        );
+      });
+      setUnseenCount((prev) => Math.max(0, currentlySeen ? prev + 1 : prev - 1));
+      if (filter.excludeSeen && !currentlySeen) {
+        setTotalItems((prev) => Math.max(0, prev - 1));
+      }
+    },
+    [refreshMe, filter.excludeSeen],
+  );
 
   const runAction = async (fn: () => Promise<void>) => {
     setError(null);
@@ -185,23 +324,21 @@ export function App() {
     if (!userDetails) return { totalSeen: 0, seenInWatchlist: 0, watchlistTotal: 0, topGenre: null };
     return {
       totalSeen: userDetails.seenItems.length,
-      seenInWatchlist: items.filter((i) => i.seen).length,
-      watchlistTotal: items.length,
+      seenInWatchlist: Math.max(0, totalItems - unseenCount),
+      watchlistTotal: totalItems,
       topGenre: mostFrequentGenre(userDetails.seenItems),
     };
-  }, [userDetails, items]);
+  }, [userDetails, totalItems, unseenCount]);
 
   const watchlistStats = useMemo(() => {
     if (!selectedWatchlistId) return null;
-    const rated = items.map((i) => i.item.rating).filter((r): r is number => r !== null);
-    const avg = rated.length > 0 ? (rated.reduce((a, b) => a + b, 0) / rated.length).toFixed(1) : null;
     return {
-      total: items.length,
-      unseenCount: items.filter((i) => !i.seen).length,
-      avgRating: avg,
-      topGenre: mostFrequentGenre(items.map((i) => i.item)),
+      total: totalItems,
+      unseenCount,
+      avgRating: avgRating !== null ? avgRating.toFixed(1) : null,
+      topGenre,
     };
-  }, [selectedWatchlistId, items]);
+  }, [selectedWatchlistId, totalItems, unseenCount, avgRating, topGenre]);
 
   if (!authChecked) {
     return (
@@ -268,15 +405,22 @@ export function App() {
                   setReelWinner(null);
                   setFilter(EMPTY_FILTER);
                   setItems([]);
+                  setPage(0);
+                  setTotalItems(0);
+                  setHasMore(false);
+                  setUnseenCount(0);
+                  setAvgRating(null);
+                  setTopGenre(null);
+                  setQuickSearch('');
+                  setDebouncedQuickSearch('');
                 })
               }
               lastGeneratedPrompt={lastGeneratedPrompt}
               recentSeen={userDetails.seenItems.slice(0, 5)}
               onMarkLastSeen={(imdbId) =>
                 runAction(async () => {
-                  await api.markSeen(imdbId);
                   setLastGeneratedPrompt(null);
-                  await Promise.all([refreshMe(), loadItems()]);
+                  await handleToggleSeen(imdbId, false);
                 })
               }
               onDismissPrompt={() => setLastGeneratedPrompt(null)}
@@ -307,15 +451,16 @@ export function App() {
                   <FilterPanel
                     metadata={metadata}
                     filter={filter}
+                    flavor={userDetails.queryFlavor}
                     hasUser={true}
                     onChange={setFilter}
                     onReset={() => setFilter(EMPTY_FILTER)}
                   />
 
                   <PickCard
-                    canPick={Boolean(selectedWatchlistId)}
+                    canPick={Boolean(selectedWatchlistId) && queryValidation.valid}
                     candidates={items.map((row) => row.item)}
-                    candidateCount={items.length}
+                    candidateCount={totalItems}
                     loading={picking}
                     spinning={reelSpinning}
                     spinKey={reelSpinKey}
@@ -357,14 +502,7 @@ export function App() {
                       setPicked(item);
                     }}
                     onToggleSeen={(imdbId, currentlySeen) =>
-                      runAction(async () => {
-                        if (currentlySeen) {
-                          await api.unmarkSeen(imdbId);
-                        } else {
-                          await api.markSeen(imdbId);
-                        }
-                        await Promise.all([refreshMe(), loadItems()]);
-                      })
+                      runAction(() => handleToggleSeen(imdbId, currentlySeen))
                     }
                   />
                 </div>
@@ -441,17 +579,22 @@ export function App() {
             {selectedWatchlistId && (
               <WatchlistBrowser
                 items={items}
+                totalItems={totalItems}
+                hasMore={hasMore}
                 hasUser={true}
                 loading={loadingItems}
+                loadingMore={loadingMore}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                quickSearch={quickSearch}
+                onQuickSearchChange={setQuickSearch}
+                onChangeSort={(nextSortBy, nextSortDir) => {
+                  setSortBy(nextSortBy);
+                  setSortDir(nextSortDir);
+                }}
+                onLoadMore={loadMoreItems}
                 onToggleSeen={(imdbId, currentlySeen) =>
-                  runAction(async () => {
-                    if (currentlySeen) {
-                      await api.unmarkSeen(imdbId);
-                    } else {
-                      await api.markSeen(imdbId);
-                    }
-                    await Promise.all([refreshMe(), loadItems()]);
-                  })
+                  runAction(() => handleToggleSeen(imdbId, currentlySeen))
                 }
               />
             )}
@@ -526,6 +669,10 @@ export function App() {
       {accountModalOpen && (
         <AccountModal
           username={userDetails.name}
+          queryFlavor={userDetails.queryFlavor}
+          onFlavorUpdated={(nextFlavor) =>
+            setUserDetails((prev) => (prev ? { ...prev, queryFlavor: nextFlavor } : prev))
+          }
           onClose={() => setAccountModalOpen(false)}
         />
       )}
