@@ -82,6 +82,7 @@ public record MediaItem(
                 && matchesGenres(effective)
                 && matchesMediaTypes(effective)
                 && matchesKeywords(effective)
+                && matchesQuickSearch(effective)
                 && matchesQuery(effective, seen);
     }
 
@@ -149,14 +150,22 @@ public record MediaItem(
         if (criteria.keywords().isEmpty()) {
             return true;
         }
-        String titleLower = title.toLowerCase(Locale.ROOT);
-        String originalTitleLower = originalTitle == null ? "" : originalTitle.toLowerCase(Locale.ROOT);
-        String directorLower = director.toLowerCase(Locale.ROOT);
         return criteria.keywords().stream()
                 .map(k -> k.toLowerCase(Locale.ROOT))
-                .anyMatch(k -> titleLower.contains(k)
-                        || (!originalTitleLower.isEmpty() && originalTitleLower.contains(k))
-                        || directorLower.contains(k));
+                .anyMatch(this::containsLowerNeedle);
+    }
+
+    private boolean matchesQuickSearch(FilterCriteria criteria) {
+        if (criteria.quickSearch() == null || criteria.quickSearch().isBlank()) {
+            return true;
+        }
+        return containsLowerNeedle(criteria.quickSearch().toLowerCase(Locale.ROOT));
+    }
+
+    private boolean containsLowerNeedle(String needleLower) {
+        return title.toLowerCase(Locale.ROOT).contains(needleLower)
+                || (originalTitle != null && originalTitle.toLowerCase(Locale.ROOT).contains(needleLower))
+                || director.toLowerCase(Locale.ROOT).contains(needleLower);
     }
 
     private boolean matchesQuery(FilterCriteria criteria, boolean seen) {

@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle2, Code2, GripVertical, Plus, Sparkles, Trash2, X } from 'lucide-react';
-import type { FilterMetadata } from '../types/api';
+import type { FilterMetadata, QueryFlavor } from '../types/api';
 import {
   appendClauseToQuery,
   chipsToQuery,
   cleanAdjacentOperators,
+  formatChipLabel,
+  formatOperatorLabel,
+  getFlavorDescriptor,
   parseQueryChips,
+  toPlainEnglishPreview,
   validateQuerySyntax,
   type ChipKind,
 } from '../utils/queryBuilder';
@@ -13,6 +17,7 @@ import {
 interface QueryConstructorProps {
   query: string;
   metadata: FilterMetadata | null;
+  flavor: QueryFlavor;
   onChange: (nextQuery: string) => void;
 }
 
@@ -47,7 +52,7 @@ function chipClassName(kind: ChipKind): string {
   }
 }
 
-export function QueryConstructor({ query, metadata, onChange }: QueryConstructorProps) {
+export function QueryConstructor({ query, metadata, flavor, onChange }: QueryConstructorProps) {
   const [textMode, setTextMode] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -61,6 +66,8 @@ export function QueryConstructor({ query, metadata, onChange }: QueryConstructor
 
   const validation = validateQuerySyntax(query, metadata);
   const chips = parseQueryChips(query, metadata);
+  const flavorDesc = getFlavorDescriptor(flavor);
+  const englishPreview = validation.valid ? toPlainEnglishPreview(query, metadata) : '';
 
   const insertToken = (rawToken: string) => {
     const current = query.trim();
@@ -119,10 +126,13 @@ export function QueryConstructor({ query, metadata, onChange }: QueryConstructor
   return (
     <div className="space-y-3 rounded border-2 border-[#00E5FF]/50 bg-[#0D0321] p-3 shadow-[0_0_16px_rgba(0,229,255,0.12)]">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Sparkles className="h-3.5 w-3.5 text-[#00E5FF]" />
           <span className="font-display text-xs font-extrabold tracking-wide text-[#00E5FF]">
             Query Constructor
+          </span>
+          <span className="rounded border border-purple-400/40 bg-purple-500/15 px-1.5 py-0.5 text-[10px] font-bold text-purple-200">
+            {flavorDesc.name}
           </span>
           {query.trim() && (
             validation.valid ? (
@@ -174,17 +184,19 @@ export function QueryConstructor({ query, metadata, onChange }: QueryConstructor
             key={op}
             type="button"
             onClick={() => insertToken(op)}
+            title={`Insert ${op}`}
             className="rounded border border-[#00E5FF]/60 bg-[#00E5FF]/10 px-2 py-0.5 font-mono text-[11px] font-extrabold text-[#00E5FF] transition hover:bg-[#00E5FF] hover:text-[#090118]"
           >
-            {op}
+            {formatOperatorLabel(op, flavor)}
           </button>
         ))}
         <button
           type="button"
           onClick={() => insertToken('NOT')}
+          title="Insert NOT"
           className="rounded border border-[#FF1E56]/70 bg-[#FF1E56]/15 px-2 py-0.5 font-mono text-[11px] font-extrabold text-[#FF6B8A] transition hover:bg-[#FF1E56] hover:text-white"
         >
-          NOT
+          {formatOperatorLabel('NOT', flavor)}
         </button>
         {(['(', ')'] as const).map((p) => (
           <button
@@ -320,7 +332,7 @@ export function QueryConstructor({ query, metadata, onChange }: QueryConstructor
         >
           {chips.length === 0 ? (
             <p className="py-1 text-center font-mono text-[11px] text-purple-300/45">
-              Click genres/types above (adds as OR), add comparators, or switch to Edit text...
+              Click genres/types above (adds as {flavorDesc.orLabel}), add comparators, or switch to Edit text...
             </p>
           ) : (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -344,7 +356,7 @@ export function QueryConstructor({ query, metadata, onChange }: QueryConstructor
                   }`}
                 >
                   <GripVertical className="h-3 w-3 opacity-50" />
-                  <span>{chip.raw}</span>
+                  <span>{formatChipLabel(chip, flavor)}</span>
                   <button
                     type="button"
                     aria-label={`Remove ${chip.raw}`}
@@ -358,6 +370,12 @@ export function QueryConstructor({ query, metadata, onChange }: QueryConstructor
             </div>
           )}
         </div>
+      )}
+
+      {englishPreview && (
+        <p className="rounded border border-purple-500/25 bg-[#14062B]/70 px-2.5 py-1.5 text-[11px] italic text-purple-200/85">
+          {englishPreview}
+        </p>
       )}
 
       {!validation.valid && validation.error && (

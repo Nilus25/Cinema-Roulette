@@ -5,6 +5,7 @@ import com.imdbselector.application.port.out.UserRepository;
 import com.imdbselector.application.port.out.WatchlistRepository;
 import com.imdbselector.application.port.out.WatchlistSubscriptionRepository;
 import com.imdbselector.application.usecase.watchlist.GetWatchlistItemsUseCase;
+import com.imdbselector.application.usecase.watchlist.PagedWatchlistItems;
 import com.imdbselector.application.usecase.watchlist.WatchlistItemView;
 import com.imdbselector.domain.model.MediaItem;
 import com.imdbselector.domain.model.User;
@@ -104,6 +105,21 @@ class WatchlistSortingAndCsvMetadataTest {
                 user.id(), watchlist.id(), FilterCriteria.unfiltered(), SortBy.UNSEEN, SortDirection.DESC);
         assertThat(unseenFirst).extracting(v -> v.item().title())
                 .containsExactly("Beta", "Gamma", "Alpha");
+
+        PagedWatchlistItems page0 = useCase.executePaged(
+                user.id(), watchlist.id(), FilterCriteria.unfiltered(), SortBy.RATING, SortDirection.DESC, 0, 2);
+        assertThat(page0.items()).extracting(v -> v.item().title()).containsExactly("Gamma", "Alpha");
+        assertThat(page0.totalItems()).isEqualTo(3);
+        assertThat(page0.totalPages()).isEqualTo(2);
+        assertThat(page0.hasMore()).isTrue();
+        assertThat(page0.unseenCount()).isEqualTo(2);
+        assertThat(page0.avgRating()).isEqualByComparingTo("8.3");
+        assertThat(page0.topGenre()).isEqualTo("Drama");
+
+        PagedWatchlistItems page1 = useCase.executePaged(
+                user.id(), watchlist.id(), FilterCriteria.unfiltered(), SortBy.RATING, SortDirection.DESC, 1, 2);
+        assertThat(page1.items()).extracting(v -> v.item().title()).containsExactly("Beta");
+        assertThat(page1.hasMore()).isFalse();
     }
 
     private static WatchlistRepository singleWatchlistRepo(Watchlist wl) {

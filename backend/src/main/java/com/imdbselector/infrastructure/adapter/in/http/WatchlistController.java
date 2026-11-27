@@ -6,6 +6,7 @@ import com.imdbselector.application.usecase.watchlist.GetWatchlistItemsUseCase;
 import com.imdbselector.application.usecase.watchlist.ImportWatchlistUseCase;
 import com.imdbselector.application.usecase.watchlist.ListAccessibleWatchlistsUseCase;
 import com.imdbselector.application.usecase.watchlist.ListPublicWatchlistsUseCase;
+import com.imdbselector.application.usecase.watchlist.PagedWatchlistItems;
 import com.imdbselector.application.usecase.watchlist.PreviewWatchlistUpdateUseCase;
 import com.imdbselector.application.usecase.watchlist.SubscribeWatchlistUseCase;
 import com.imdbselector.application.usecase.watchlist.UnsubscribeWatchlistUseCase;
@@ -182,17 +183,19 @@ public final class WatchlistController {
                     ctx.queryParam("mediaTypes"),
                     ctx.queryParam("keywords"),
                     Boolean.parseBoolean(ctx.queryParam("excludeSeen")),
-                    ctx.queryParam("query")
+                    ctx.queryParam("query"),
+                    ctx.queryParam("quickSearch")
             );
             SortBy sortBy = SortBy.fromString(ctx.queryParam("sortBy"));
             SortDirection sortDir = SortDirection.fromString(ctx.queryParam("sortDir"), null);
+            Integer pageParam = parseOptionalInt("page", ctx.queryParam("page"));
+            Integer sizeParam = parseOptionalInt("size", ctx.queryParam("size"));
+            int page = pageParam == null ? 0 : pageParam;
+            int size = sizeParam == null ? GetWatchlistItemsUseCase.DEFAULT_PAGE_SIZE : sizeParam;
 
-            List<ApiDtos.WatchlistItemResponse> items = getWatchlistItems
-                    .execute(userId, watchlistId, criteria, sortBy, sortDir)
-                    .stream()
-                    .map(ApiDtos.WatchlistItemResponse::from)
-                    .toList();
-            ctx.json(items);
+            PagedWatchlistItems result = getWatchlistItems.executePaged(
+                    userId, watchlistId, criteria, sortBy, sortDir, page, size);
+            ctx.json(ApiDtos.PagedWatchlistItemsResponse.from(result));
         });
 
         app.delete("/api/watchlists/{watchlistId}", ctx -> {
@@ -216,7 +219,8 @@ public final class WatchlistController {
             String mediaTypes,
             String keywords,
             boolean excludeSeen,
-            String query
+            String query,
+            String quickSearch
     ) {
         Rating minR = (minRating == null || minRating.isBlank()) ? null : Rating.of(minRating);
         Rating maxR = (maxRating == null || maxRating.isBlank()) ? null : Rating.of(maxRating);
@@ -231,7 +235,7 @@ public final class WatchlistController {
         Set<MediaType> typeSet = splitCsv(mediaTypes).stream().map(MediaType::fromLabel).collect(Collectors.toSet());
         List<String> keywordList = splitCsv(keywords);
 
-        return new FilterCriteria(minR, maxR, minY, maxY, minRt, maxRt, minV, maxV, genreSet, typeSet, keywordList, excludeSeen, query);
+        return new FilterCriteria(minR, maxR, minY, maxY, minRt, maxRt, minV, maxV, genreSet, typeSet, keywordList, excludeSeen, query, quickSearch);
     }
 
     private static Integer parseOptionalInt(String paramName, String raw) {

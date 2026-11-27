@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   ArrowDown,
   ArrowUp,
@@ -17,11 +18,17 @@ import type { SortBy, SortDirection, WatchlistItemResponse } from '../types/api'
 
 interface WatchlistBrowserProps {
   items: WatchlistItemResponse[];
+  totalItems: number;
+  hasMore: boolean;
   hasUser: boolean;
   loading: boolean;
+  loadingMore: boolean;
   sortBy: SortBy;
   sortDir: SortDirection;
+  quickSearch: string;
+  onQuickSearchChange: (next: string) => void;
   onChangeSort: (nextSortBy: SortBy, nextSortDir: SortDirection) => void;
+  onLoadMore: () => void;
   onToggleSeen: (imdbId: string, currentlySeen: boolean) => Promise<void>;
 }
 
@@ -50,17 +57,44 @@ function formatVotes(votes: number): string {
 
 export function WatchlistBrowser({
   items,
+  totalItems,
+  hasMore,
   hasUser,
   loading,
+  loadingMore,
   sortBy,
   sortDir,
+  quickSearch,
+  onQuickSearchChange,
   onChangeSort,
+  onLoadMore,
   onToggleSeen,
 }: WatchlistBrowserProps) {
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [quickSearch, setQuickSearch] = useState('');
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const scrollParentRef = useRef<HTMLDivElement | null>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => scrollParentRef.current,
+    estimateSize: () => 74,
+    gap: 8,
+    overscan: 5,
+    getItemKey: (index) => items[index]?.item.imdbId ?? index,
+  });
+
+  const virtualRows = rowVirtualizer.getVirtualItems();
+
+  useEffect(() => {
+    if (!hasMore || loading || loadingMore || virtualRows.length === 0) {
+      return;
+    }
+    const lastVirtual = virtualRows[virtualRows.length - 1];
+    if (lastVirtual.index >= items.length - 6) {
+      onLoadMore();
+    }
+  }, [virtualRows, items.length, hasMore, loading, loadingMore, onLoadMore]);
 
   useEffect(() => {
     if (!sortMenuOpen) return;
@@ -73,16 +107,6 @@ export function WatchlistBrowser({
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [sortMenuOpen]);
 
-  const displayedItems = useMemo(() => {
-    const q = quickSearch.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(({ item }) =>
-      item.title.toLowerCase().includes(q)
-      || (item.originalTitle?.toLowerCase().includes(q) ?? false)
-      || item.director.toLowerCase().includes(q),
-    );
-  }, [items, quickSearch]);
-
   const activeSortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? 'Default';
 
   return (
@@ -91,8 +115,11 @@ export function WatchlistBrowser({
         <div className="flex items-center gap-2 font-display text-sm font-bold text-[#FF9E44]">
           <ListVideo className="h-4 w-4" />
           <span>Cinematheque</span>
-          <span className="rounded bg-[#39FF14] px-2 py-0.5 text-xs font-extrabold text-[#090118]">
-            {displayedItems.length}
+          <span
+            title={`Loaded ${items.length} of ${totalItems}`}
+            className="rounded bg-[#39FF14] px-2 py-0.5 text-xs font-extrabold text-[#090118]"
+          >
+            {totalItems}
           </span>
         </div>
 
@@ -104,7 +131,9 @@ export function WatchlistBrowser({
             title="Quick search"
             onClick={() => {
               setSearchOpen((v) => !v);
-              if (searchOpen) setQuickSearch('');
+              if (searchOpen && quickSearch) {
+                onQuickSearchChange('');
+              }
             }}
             className={`inline-flex items-center justify-center rounded border p-1 transition ${
               searchOpen || quickSearch
@@ -184,15 +213,15 @@ export function WatchlistBrowser({
             type="text"
             autoFocus
             value={quickSearch}
-            onChange={(e) => setQuickSearch(e.target.value)}
-            placeholder="Quick filter list (title, original title, director)..."
+            onChange={(e) => onQuickSearchChange(e.target.value)}
+            placeholder="Search all pages (title, original title, director)..."
             className="w-full rounded border border-[#FF7A00]/60 bg-[#090118] pl-8 pr-7 py-1.5 text-xs font-semibold text-white placeholder-orange-200/40 focus:border-[#39FF14] focus:outline-none"
           />
           {quickSearch && (
             <button
               type="button"
               aria-label="Clear quick search"
-              onClick={() => setQuickSearch('')}
+              onClick={() => onQuickSearchChange('')}
               className="absolute right-2 top-2 text-orange-200/70 hover:text-white"
             >
               <X className="h-3.5 w-3.5" />
@@ -201,87 +230,110 @@ export function WatchlistBrowser({
         </div>
       )}
 
-      {displayedItems.length === 0 ? (
+      {items.length === 0 ? (
         <p className="py-6 text-center text-sm font-semibold text-orange-200/70">
-          No matching titles in this watchlist.
+          {loading ? 'Loading watchlist...' : 'No matching titles in this watchlist.'}
         </p>
       ) : (
-        <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
-          {displayedItems.map(({ item, seen }) => {
-            const showOriginal = Boolean(
-              item.originalTitle && item.originalTitle.toLowerCase() !== item.title.toLowerCase(),
-            );
-            return (
-              <div
-                key={item.imdbId}
-                className={`film-cell flex items-stretch ${
-                  seen ? 'film-cell-seen' : ''
-                }`}
-              >
-                <div aria-hidden="true" className="film-cell-rail border-r border-orange-500/35" />
+        <div ref={scrollParentRef} className="max-h-[420px] overflow-y-auto pr-1">
+          <div
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualRows.map((virtualRow) => {
+              const { item, seen } = items[virtualRow.index];
+              const showOriginal = Boolean(
+                item.originalTitle && item.originalTitle.toLowerCase() !== item.title.toLowerCase(),
+              );
+              return (
+                <div
+                  key={item.imdbId}
+                  ref={rowVirtualizer.measureElement}
+                  data-index={virtualRow.index}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <div className={`film-cell flex items-stretch ${seen ? 'film-cell-seen' : ''}`}>
+                    <div aria-hidden="true" className="film-cell-rail border-r border-orange-500/35" />
 
-                <div className="flex min-w-0 flex-1 flex-col gap-1.5 px-3 py-2.5">
-                  <div className="min-w-0">
-                    <a
-                      href={item.imdbUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex max-w-full items-center gap-1.5 text-sm font-bold text-white transition hover:text-[#39FF14]"
-                    >
-                      <span className="truncate">{item.title}</span>
-                      <ExternalLink className="h-3 w-3 shrink-0 text-[#FF9E44]" />
-                    </a>
-                    {showOriginal && (
-                      <p className="truncate text-[11px] italic text-purple-200/55">{item.originalTitle}</p>
-                    )}
-                  </div>
+                    <div className="flex min-w-0 flex-1 flex-col gap-1.5 px-3 py-2.5">
+                      <div className="min-w-0">
+                        <a
+                          href={item.imdbUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex max-w-full items-center gap-1.5 text-sm font-bold text-white transition hover:text-[#39FF14]"
+                        >
+                          <span className="truncate">{item.title}</span>
+                          <ExternalLink className="h-3 w-3 shrink-0 text-[#FF9E44]" />
+                        </a>
+                        {showOriginal && (
+                          <p className="truncate text-[11px] italic text-purple-200/55">{item.originalTitle}</p>
+                        )}
+                      </div>
 
-                  <div className="flex items-end justify-between gap-2">
-                    <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs font-semibold text-orange-100/70">
-                      {item.releaseYear && <span>{item.releaseYear}</span>}
-                      {item.rating !== null && (
-                        <span className="inline-flex items-center gap-0.5 font-extrabold text-[#FFE600]">
-                          <Star className="h-3 w-3 fill-[#FFE600]" />
-                          {item.rating}
-                        </span>
-                      )}
-                      {item.runtimeMinutes !== null && (
-                        <span className="inline-flex items-center gap-0.5 text-[#00E5FF]">
-                          <Clock className="h-3 w-3" />
-                          {formatRuntime(item.runtimeMinutes)}
-                        </span>
-                      )}
-                      {item.numVotes !== null && (
-                        <span className="inline-flex items-center gap-0.5 text-purple-200/70">
-                          <Users className="h-3 w-3" />
-                          {formatVotes(item.numVotes)}
-                        </span>
-                      )}
-                      <span className="text-[#FF5CA8]">{item.mediaType}</span>
-                      {item.director && <span className="truncate">{item.director}</span>}
+                      <div className="flex items-end justify-between gap-2">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs font-semibold text-orange-100/70">
+                          {item.releaseYear && <span>{item.releaseYear}</span>}
+                          {item.rating !== null && (
+                            <span className="inline-flex items-center gap-0.5 font-extrabold text-[#FFE600]">
+                              <Star className="h-3 w-3 fill-[#FFE600]" />
+                              {item.rating}
+                            </span>
+                          )}
+                          {item.runtimeMinutes !== null && (
+                            <span className="inline-flex items-center gap-0.5 text-[#00E5FF]">
+                              <Clock className="h-3 w-3" />
+                              {formatRuntime(item.runtimeMinutes)}
+                            </span>
+                          )}
+                          {item.numVotes !== null && (
+                            <span className="inline-flex items-center gap-0.5 text-purple-200/70">
+                              <Users className="h-3 w-3" />
+                              {formatVotes(item.numVotes)}
+                            </span>
+                          )}
+                          <span className="text-[#FF5CA8]">{item.mediaType}</span>
+                          {item.director && <span className="truncate">{item.director}</span>}
+                        </div>
+
+                        {hasUser && (
+                          <button
+                            type="button"
+                            onClick={() => onToggleSeen(item.imdbId, seen)}
+                            className={`inline-flex shrink-0 items-center gap-1.5 rounded border-2 px-2.5 py-0.5 text-xs font-bold transition ${
+                              seen
+                                ? 'border-[#39FF14] bg-[#39FF14] text-[#090118]'
+                                : 'border-[#FF7A00]/60 bg-[#090118] text-orange-100 hover:border-[#39FF14]'
+                            }`}
+                          >
+                            {seen ? <Check className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            <span>{seen ? 'Seen' : 'Mark'}</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    {hasUser && (
-                      <button
-                        type="button"
-                        onClick={() => onToggleSeen(item.imdbId, seen)}
-                        className={`inline-flex shrink-0 items-center gap-1.5 rounded border-2 px-2.5 py-0.5 text-xs font-bold transition ${
-                          seen
-                            ? 'border-[#39FF14] bg-[#39FF14] text-[#090118]'
-                            : 'border-[#FF7A00]/60 bg-[#090118] text-orange-100 hover:border-[#39FF14]'
-                        }`}
-                      >
-                        {seen ? <Check className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                        <span>{seen ? 'Seen' : 'Mark'}</span>
-                      </button>
-                    )}
+                    <div aria-hidden="true" className="film-cell-rail border-l border-orange-500/35" />
                   </div>
                 </div>
+              );
+            })}
+          </div>
 
-                <div aria-hidden="true" className="film-cell-rail border-l border-orange-500/35" />
-              </div>
-            );
-          })}
+          {loadingMore && (
+            <p className="py-2 text-center font-mono text-[11px] font-bold text-[#FFE600]">
+              Loading next reel...
+            </p>
+          )}
         </div>
       )}
     </section>

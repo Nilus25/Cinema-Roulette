@@ -107,6 +107,15 @@ final class QueryLexer {
             } else if (c == '|' && i + 1 < length && input.charAt(i + 1) == '|') {
                 tokens.add(new Token(TokenType.OR, "||", i));
                 i += 2;
+            } else if (c == '\u2227') {
+                tokens.add(new Token(TokenType.AND, "\u2227", i));
+                i++;
+            } else if (c == '\u2228') {
+                tokens.add(new Token(TokenType.OR, "\u2228", i));
+                i++;
+            } else if (c == '\u00AC') {
+                tokens.add(new Token(TokenType.NOT, "\u00AC", i));
+                i++;
             } else if (c == '"' || c == '\'') {
                 int start = i;
                 char quote = c;

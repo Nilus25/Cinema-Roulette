@@ -25,6 +25,7 @@ public record FilterCriteria(
         List<String> keywords,
         boolean excludeSeen,
         String query,
+        String quickSearch,
         QueryExpression compiledQuery
 ) {
     public FilterCriteria {
@@ -63,9 +64,45 @@ public record FilterCriteria(
                 .map(String::trim)
                 .toList();
         query = (query == null || query.isBlank()) ? null : query.trim();
+        quickSearch = (quickSearch == null || quickSearch.isBlank()) ? null : quickSearch.trim();
         if (compiledQuery == null && query != null) {
             compiledQuery = QueryParser.parse(query);
         }
+    }
+
+    public FilterCriteria(
+            Rating minRating,
+            Rating maxRating,
+            ReleaseYear minYear,
+            ReleaseYear maxYear,
+            Integer minRuntime,
+            Integer maxRuntime,
+            Integer minVotes,
+            Integer maxVotes,
+            Set<Genre> genres,
+            Set<MediaType> mediaTypes,
+            List<String> keywords,
+            boolean excludeSeen,
+            String query,
+            String quickSearch
+    ) {
+        this(
+                minRating,
+                maxRating,
+                minYear,
+                maxYear,
+                minRuntime,
+                maxRuntime,
+                minVotes,
+                maxVotes,
+                genres,
+                mediaTypes,
+                keywords,
+                excludeSeen,
+                query,
+                quickSearch,
+                null
+        );
     }
 
     public FilterCriteria(
@@ -97,6 +134,7 @@ public record FilterCriteria(
                 keywords,
                 excludeSeen,
                 query,
+                null,
                 null
         );
     }
@@ -124,6 +162,7 @@ public record FilterCriteria(
                 mediaTypes,
                 keywords,
                 excludeSeen,
+                null,
                 null,
                 null
         );

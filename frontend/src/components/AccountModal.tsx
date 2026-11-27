@@ -1,13 +1,22 @@
 import { useState } from 'react';
-import { Check, Download, KeyRound, X } from 'lucide-react';
+import { Check, Download, KeyRound, Sparkles, X } from 'lucide-react';
 import { api } from '../api/client';
+import type { QueryFlavor } from '../types/api';
+import { QUERY_FLAVORS } from '../utils/queryBuilder';
 
 interface AccountModalProps {
   username: string;
+  queryFlavor: QueryFlavor;
+  onFlavorUpdated: (next: QueryFlavor) => void;
   onClose: () => void;
 }
 
-export function AccountModal({ username, onClose }: AccountModalProps) {
+export function AccountModal({ username, queryFlavor, onFlavorUpdated, onClose }: AccountModalProps) {
+  const [selectedFlavor, setSelectedFlavor] = useState<QueryFlavor>(queryFlavor);
+  const [savingFlavor, setSavingFlavor] = useState(false);
+  const [flavorError, setFlavorError] = useState<string | null>(null);
+  const [flavorSaved, setFlavorSaved] = useState(false);
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,6 +27,22 @@ export function AccountModal({ username, onClose }: AccountModalProps) {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportSuccess, setExportSuccess] = useState(false);
+
+  const handleSelectFlavor = async (next: QueryFlavor) => {
+    setSelectedFlavor(next);
+    setFlavorError(null);
+    setFlavorSaved(false);
+    setSavingFlavor(true);
+    try {
+      const updated = await api.updatePreferences(next);
+      onFlavorUpdated(updated.queryFlavor);
+      setFlavorSaved(true);
+    } catch (err) {
+      setFlavorError((err as Error).message);
+    } finally {
+      setSavingFlavor(false);
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +118,60 @@ export function AccountModal({ username, onClose }: AccountModalProps) {
         </div>
 
         <div className="mt-4 space-y-5 overflow-y-auto pr-1">
-          <form onSubmit={handleChangePassword} className="space-y-3">
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-[#FF8DC7]">
+                <Sparkles className="h-3.5 w-3.5 text-[#00E5FF]" />
+                <span>Query Operator Flavour</span>
+              </div>
+              {savingFlavor && <span className="text-[11px] font-bold text-[#FFE600]">Saving...</span>}
+              {!savingFlavor && flavorSaved && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#39FF14]">
+                  <Check className="h-3 w-3" />
+                  Saved
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-purple-200/75">
+              Changes how logical operators appear in the Query Constructor without altering saved filters.
+            </p>
+            {flavorError && (
+              <div className="rounded border border-[#FF2E54] bg-[#290510] px-3 py-2 text-xs font-semibold text-rose-200">
+                {flavorError}
+              </div>
+            )}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {QUERY_FLAVORS.map((f) => {
+                const active = selectedFlavor === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    disabled={savingFlavor}
+                    onClick={() => handleSelectFlavor(f.id)}
+                    className={`rounded border-2 p-2.5 text-left transition ${
+                      active
+                        ? 'border-[#00E5FF] bg-[#00E5FF]/15 shadow-[0_0_12px_rgba(0,229,255,0.25)]'
+                        : 'border-purple-500/40 bg-[#090118] hover:border-purple-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className={`text-xs font-extrabold ${active ? 'text-[#00E5FF]' : 'text-white'}`}>
+                        {f.name}
+                      </span>
+                      {active && <Check className="h-3.5 w-3.5 shrink-0 text-[#39FF14]" />}
+                    </div>
+                    <p className="mt-0.5 text-[10px] text-purple-200/70">{f.tagline}</p>
+                    <p className="mt-1.5 font-mono text-[10px] font-bold text-[#FFE600]">
+                      Movie {f.andLabel} {f.notLabel} Romance {f.orLabel} TV
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <form onSubmit={handleChangePassword} className="border-t border-[#B5179E]/40 pt-4 space-y-3">
             <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-[#FF8DC7]">
               <KeyRound className="h-3.5 w-3.5 text-[#39FF14]" />
               <span>Change Password</span>
@@ -188,7 +266,7 @@ export function AccountModal({ username, onClose }: AccountModalProps) {
               className="inline-flex w-full items-center justify-center gap-2 rounded border-2 border-[#00E5FF] bg-[#090118] px-3 py-2 text-xs font-extrabold text-[#00E5FF] transition hover:bg-[#00E5FF] hover:text-[#090118] disabled:opacity-50"
             >
               <Download className="h-3.5 w-3.5" />
-              <span>{exporting ? 'Preparing Backup...' : 'Download My Data (.json)'}</span>
+              <span>{exporting ? 'Preparing Backup...' : 'Download JSON Backup'}</span>
             </button>
           </div>
         </div>

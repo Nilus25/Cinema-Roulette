@@ -1,18 +1,24 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, EyeOff, RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
-import type { FilterMetadata, FilterState } from '../types/api';
-import { getActiveTermsFromQuery, normalizeKey, toggleTermInQuery } from '../utils/queryBuilder';
+import type { FilterMetadata, FilterState, QueryFlavor } from '../types/api';
+import {
+  formatOperatorLabel,
+  getActiveTermsFromQuery,
+  normalizeKey,
+  toggleTermInQuery,
+} from '../utils/queryBuilder';
 import { QueryConstructor } from './QueryConstructor';
 
 interface FilterPanelProps {
   metadata: FilterMetadata | null;
   filter: FilterState;
+  flavor: QueryFlavor;
   hasUser: boolean;
   onChange: (next: FilterState) => void;
   onReset: () => void;
 }
 
-export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: FilterPanelProps) {
+export function FilterPanel({ metadata, filter, flavor, hasUser, onChange, onReset }: FilterPanelProps) {
   const [open, setOpen] = useState(false);
 
   const activeQueryTerms = useMemo(
@@ -189,7 +195,7 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
                 <div className="flex items-center justify-between">
                   <p className="font-display text-xs font-bold text-[#39FF14]">Genres</p>
                   <span className="text-[10px] font-semibold text-purple-300/55">
-                    Click to toggle into Query (OR)
+                    Click to toggle into Query ({formatOperatorLabel('OR', flavor)})
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -241,6 +247,7 @@ export function FilterPanel({ metadata, filter, hasUser, onChange, onReset }: Fi
           <QueryConstructor
             query={filter.query}
             metadata={metadata}
+            flavor={flavor}
             onChange={(nextQuery) => onChange({ ...filter, query: nextQuery })}
           />
         </div>

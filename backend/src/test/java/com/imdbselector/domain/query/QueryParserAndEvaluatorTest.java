@@ -105,6 +105,19 @@ class QueryParserAndEvaluatorTest {
         assertThat(expr.evaluate(horrorDramaRomanceMovie, false)).isFalse();
         assertThat(expr.evaluate(tvSeries, false)).isTrue();
         assertThat(expr.evaluate(foreignClassic, false)).isFalse();
+
+        QueryExpression cinephileExpr = QueryParser.parse(
+                "(Movie \u2227 (Horror \u2227 Drama) \u2227 \u00AC Romance) \u2228 TV Series"
+        );
+        assertThat(cinephileExpr.evaluate(horrorDramaMovie, false)).isTrue();
+        assertThat(cinephileExpr.evaluate(horrorDramaRomanceMovie, false)).isFalse();
+        assertThat(cinephileExpr.evaluate(tvSeries, false)).isTrue();
+
+        QueryExpression geekExpr = QueryParser.parse(
+                "(Movie && (Horror && Drama) && !Romance) || TV Series"
+        );
+        assertThat(geekExpr.evaluate(horrorDramaMovie, false)).isTrue();
+        assertThat(geekExpr.evaluate(horrorDramaRomanceMovie, false)).isFalse();
     }
 
     @Test

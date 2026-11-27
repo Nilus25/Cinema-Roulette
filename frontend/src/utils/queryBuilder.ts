@@ -1,4 +1,4 @@
-import type { FilterMetadata } from '../types/api';
+import type { FilterMetadata, QueryFlavor } from '../types/api';
 
 export type ChipKind =
   | 'operator'
@@ -138,6 +138,15 @@ function tokenizeRaw(input: string): { tokens: RawToken[]; error: string | null 
     } else if (c === '|' && input[i + 1] === '|') {
       tokens.push({ type: 'OR', text: 'OR', raw: '||', position: i });
       i += 2;
+    } else if (c === '\u2227') {
+      tokens.push({ type: 'AND', text: 'AND', raw: '\u2227', position: i });
+      i++;
+    } else if (c === '\u2228') {
+      tokens.push({ type: 'OR', text: 'OR', raw: '\u2228', position: i });
+      i++;
+    } else if (c === '\u00AC') {
+      tokens.push({ type: 'NOT', text: 'NOT', raw: '\u00AC', position: i });
+      i++;
     } else if (c === '"' || c === "'") {
       const start = i;
       const quote = c;
@@ -592,4 +601,142 @@ export function getActiveTermsFromQuery(query: string, metadata: FilterMetadata 
     }
   }
   return active;
+}
+
+export interface FlavorDescriptor {
+  id: QueryFlavor;
+  name: string;
+  tagline: string;
+  andLabel: string;
+  orLabel: string;
+  notLabel: string;
+}
+
+export const QUERY_FLAVORS: FlavorDescriptor[] = [
+  {
+    id: 'NETFLIX_AND_CHILL',
+    name: 'Netflix & Chill',
+    tagline: 'Clean & classic boolean keywords',
+    andLabel: 'AND',
+    orLabel: 'OR',
+    notLabel: 'NOT',
+  },
+  {
+    id: 'MOVIE_GEEK',
+    name: 'Movie Geek',
+    tagline: 'Computer science operators',
+    andLabel: '&&',
+    orLabel: '||',
+    notLabel: '!',
+  },
+  {
+    id: 'CINEPHILE',
+    name: 'Cinephile',
+    tagline: 'Formal philosophy & propositional logic',
+    andLabel: '\u2227',
+    orLabel: '\u2228',
+    notLabel: '\u00AC',
+  },
+  {
+    id: 'VO_ENTHUSIAST',
+    name: 'V.O. Enthusiast',
+    tagline: 'Natural prose connectors',
+    andLabel: 'and',
+    orLabel: 'or',
+    notLabel: 'without',
+  },
+];
+
+export function getFlavorDescriptor(flavor: QueryFlavor | undefined): FlavorDescriptor {
+  return QUERY_FLAVORS.find((f) => f.id === flavor) ?? QUERY_FLAVORS[0];
+}
+
+export function formatOperatorLabel(op: 'AND' | 'OR' | 'NOT', flavor: QueryFlavor | undefined): string {
+  const desc = getFlavorDescriptor(flavor);
+  if (op === 'AND') return desc.andLabel;
+  if (op === 'OR') return desc.orLabel;
+  return desc.notLabel;
+}
+
+export function formatChipLabel(chip: QueryChip, flavor: QueryFlavor | undefined): string {
+  if (chip.kind === 'operator') {
+    if (chip.raw === 'AND' || chip.raw === 'OR') {
+      return formatOperatorLabel(chip.raw, flavor);
+    }
+  }
+  if (chip.kind === 'not') {
+    return formatOperatorLabel('NOT', flavor);
+  }
+  return chip.raw;
+}
+
+function unquote(raw: string): string {
+  return raw.replace(/^["']|["']$/g, '');
+}
+
+function formatComparisonEnglish(raw: string): string {
+  const match = raw.match(/^([a-zA-Z_]+)\s*(<=|>=|!=|==|<|>|=)\s*(.+)$/);
+  if (!match) return raw;
+  const [, fieldRaw, op, val] = match;
+  const field = fieldRaw.toLowerCase();
+  const opText =
+    op === '>=' ? 'at least'
+      : op === '<=' ? 'at most'
+        : op === '>' ? 'above'
+          : op === '<' ? 'under'
+            : op === '!=' ? 'not'
+              : 'exactly';
+  if (field.startsWith('runtime') || field === 'duration' || field === 'mins') {
+    return `runtime is ${opText} ${val} min`;
+  }
+  if (field.startsWith('vote') || field === 'num_votes') {
+    return `${opText} ${Number(val).toLocaleString()} votes`;
+  }
+  return `${field} is ${opText} ${val}`;
+}
+
+export function toPlainEnglishPreview(query: string, metadata: FilterMetadata | null): string {
+  const trimmed = query.trim();
+  if (!trimmed) return '';
+  const chips = parseQueryChips(trimmed, metadata);
+  if (chips.length === 0) return '';
+
+  const parts: string[] = [];
+  for (let i = 0; i < chips.length; i++) {
+    const chip = chips[i];
+    const next = chips[i + 1];
+    if (chip.kind === 'operator') {
+      parts.push(chip.raw === 'AND' ? 'and' : 'or');
+    } else if (chip.kind === 'not') {
+      if (next && (next.kind === 'genre' || next.kind === 'mediaType')) {
+        parts.push(`not ${unquote(next.raw)}`);
+        i++;
+      } else {
+        parts.push('not');
+      }
+    } else if (chip.kind === 'paren') {
+      parts.push(chip.raw);
+    } else if (chip.kind === 'genre' || chip.kind === 'mediaType') {
+      const cleaned = chip.raw.replace(/^(genre|type|mediatype|media_type)\s*[:=]\s*/i, '');
+      parts.push(`is ${unquote(cleaned)}`);
+    } else if (chip.kind === 'comparison') {
+      parts.push(formatComparisonEnglish(chip.raw));
+    } else if (chip.kind === 'text') {
+      const colonIdx = chip.raw.indexOf(':');
+      if (colonIdx > 0) {
+        const field = chip.raw.slice(0, colonIdx).toLowerCase();
+        const val = unquote(chip.raw.slice(colonIdx + 1));
+        parts.push(`${field} matches "${val}"`);
+      } else {
+        parts.push(chip.raw);
+      }
+    } else if (chip.kind === 'seen') {
+      parts.push(chip.raw === 'unseen' ? 'unseen' : chip.raw);
+    } else {
+      parts.push(unquote(chip.raw));
+    }
+  }
+
+  const joined = parts.join(' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
+  return `Titles where ${joined}`;
 }

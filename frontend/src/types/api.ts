@@ -1,9 +1,12 @@
+export type QueryFlavor = 'NETFLIX_AND_CHILL' | 'MOVIE_GEEK' | 'CINEPHILE' | 'VO_ENTHUSIAST';
+
 export interface UserResponse {
   id: string;
   name: string;
   lastGeneratedImdbId: string | null;
   lastGeneratedAt: string | null;
   seenCount: number;
+  queryFlavor: QueryFlavor;
 }
 
 export interface MediaItemResponse {
@@ -23,6 +26,7 @@ export interface MediaItemResponse {
 export interface UserDetailsResponse {
   id: string;
   name: string;
+  queryFlavor: QueryFlavor;
   unseenLastGeneratedPrompt: MediaItemResponse | null;
   seenItems: MediaItemResponse[];
 }
@@ -43,6 +47,18 @@ export interface WatchlistResponse {
 export interface WatchlistItemResponse {
   item: MediaItemResponse;
   seen: boolean;
+}
+
+export interface PagedWatchlistItemsResponse {
+  items: WatchlistItemResponse[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+  hasMore: boolean;
+  unseenCount: number;
+  avgRating: number | null;
+  topGenre: string | null;
 }
 
 export interface WatchlistUpdatePreviewResponse {

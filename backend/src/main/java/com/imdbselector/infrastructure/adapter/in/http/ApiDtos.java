@@ -2,6 +2,7 @@ package com.imdbselector.infrastructure.adapter.in.http;
 
 import com.imdbselector.application.usecase.user.UserDetails;
 import com.imdbselector.application.usecase.user.UserExportData;
+import com.imdbselector.application.usecase.watchlist.PagedWatchlistItems;
 import com.imdbselector.application.usecase.watchlist.WatchlistItemView;
 import com.imdbselector.application.usecase.watchlist.WatchlistSummary;
 import com.imdbselector.domain.model.MediaItem;
@@ -32,6 +33,9 @@ public final class ApiDtos {
     public record ChangePasswordRequest(String currentPassword, String newPassword) {
     }
 
+    public record UpdatePreferencesRequest(String queryFlavor) {
+    }
+
     public record SubscribeCodeRequest(String shareCode) {
     }
 
@@ -43,7 +47,8 @@ public final class ApiDtos {
             String name,
             String lastGeneratedImdbId,
             Instant lastGeneratedAt,
-            int seenCount
+            int seenCount,
+            String queryFlavor
     ) {
         public static UserResponse from(User user) {
             return new UserResponse(
@@ -51,7 +56,8 @@ public final class ApiDtos {
                     user.name(),
                     user.lastGeneratedImdbId() == null ? null : user.lastGeneratedImdbId().value(),
                     user.lastGeneratedAt(),
-                    user.seenMediaIds().size()
+                    user.seenMediaIds().size(),
+                    user.queryFlavor().name()
             );
         }
     }
@@ -59,6 +65,7 @@ public final class ApiDtos {
     public record UserDetailsResponse(
             UUID id,
             String name,
+            String queryFlavor,
             MediaItemResponse unseenLastGeneratedPrompt,
             List<MediaItemResponse> seenItems
     ) {
@@ -66,6 +73,7 @@ public final class ApiDtos {
             return new UserDetailsResponse(
                     details.user().id().value(),
                     details.user().name(),
+                    details.user().queryFlavor().name(),
                     details.unseenLastGeneratedPrompt().map(MediaItemResponse::from).orElse(null),
                     details.seenItems().stream().map(MediaItemResponse::from).toList()
             );
@@ -199,6 +207,32 @@ public final class ApiDtos {
     public record WatchlistItemResponse(MediaItemResponse item, boolean seen) {
         public static WatchlistItemResponse from(WatchlistItemView view) {
             return new WatchlistItemResponse(MediaItemResponse.from(view.item()), view.seen());
+        }
+    }
+
+    public record PagedWatchlistItemsResponse(
+            List<WatchlistItemResponse> items,
+            int page,
+            int size,
+            int totalItems,
+            int totalPages,
+            boolean hasMore,
+            int unseenCount,
+            BigDecimal avgRating,
+            String topGenre
+    ) {
+        public static PagedWatchlistItemsResponse from(PagedWatchlistItems result) {
+            return new PagedWatchlistItemsResponse(
+                    result.items().stream().map(WatchlistItemResponse::from).toList(),
+                    result.page(),
+                    result.size(),
+                    result.totalItems(),
+                    result.totalPages(),
+                    result.hasMore(),
+                    result.unseenCount(),
+                    result.avgRating(),
+                    result.topGenre()
+            );
         }
     }
 

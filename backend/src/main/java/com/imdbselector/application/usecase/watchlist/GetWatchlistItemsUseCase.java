@@ -8,6 +8,7 @@ import com.imdbselector.domain.model.MediaItem;
 import com.imdbselector.domain.model.User;
 import com.imdbselector.domain.model.Watchlist;
 import com.imdbselector.domain.valueobject.FilterCriteria;
+import com.imdbselector.domain.valueobject.Genre;
 import com.imdbselector.domain.valueobject.ImdbId;
 import com.imdbselector.domain.valueobject.SortBy;
 import com.imdbselector.domain.valueobject.SortDirection;
@@ -15,12 +16,18 @@ import com.imdbselector.domain.valueobject.UserId;
 import com.imdbselector.domain.valueobject.WatchlistId;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 public final class GetWatchlistItemsUseCase {
+    public static final int DEFAULT_PAGE_SIZE = 40;
+    public static final int MAX_PAGE_SIZE = 100;
+
     private final WatchlistRepository watchlistRepository;
     private final WatchlistSubscriptionRepository subscriptionRepository;
     private final MediaItemRepository mediaItemRepository;
@@ -63,6 +70,80 @@ public final class GetWatchlistItemsUseCase {
                 .map(item -> new WatchlistItemView(item, seenIds.contains(item.imdbId())))
                 .toList();
 
+        return sortViews(views, sortBy, sortDirection);
+    }
+
+    public PagedWatchlistItems executePaged(
+            UserId actorId,
+            WatchlistId watchlistId,
+            FilterCriteria criteria,
+            SortBy sortBy,
+            SortDirection sortDirection,
+            int page,
+            int size
+    ) {
+        if (page < 0) {
+            throw new IllegalArgumentException("page must be >= 0");
+        }
+        if (size < 1 || size > MAX_PAGE_SIZE) {
+            throw new IllegalArgumentException("size must be between 1 and " + MAX_PAGE_SIZE);
+        }
+
+        List<WatchlistItemView> allSorted = execute(actorId, watchlistId, criteria, sortBy, sortDirection);
+        int totalItems = allSorted.size();
+        int totalPages = totalItems == 0 ? 0 : (int) Math.ceil((double) totalItems / size);
+        int fromIndex = Math.min(page * size, totalItems);
+        int toIndex = Math.min(fromIndex + size, totalItems);
+        List<WatchlistItemView> slice = allSorted.subList(fromIndex, toIndex);
+        boolean hasMore = toIndex < totalItems;
+
+        int unseenCount = 0;
+        BigDecimal ratingSum = BigDecimal.ZERO;
+        int ratedCount = 0;
+        Map<String, Integer> genreCounts = new HashMap<>();
+
+        for (WatchlistItemView view : allSorted) {
+            if (!view.seen()) {
+                unseenCount++;
+            }
+            MediaItem item = view.item();
+            if (item.rating() != null) {
+                ratingSum = ratingSum.add(item.rating().value());
+                ratedCount++;
+            }
+            for (Genre genre : item.genres()) {
+                genreCounts.merge(genre.label(), 1, Integer::sum);
+            }
+        }
+
+        BigDecimal avgRating = ratedCount == 0
+                ? null
+                : ratingSum.divide(BigDecimal.valueOf(ratedCount), 1, RoundingMode.HALF_UP);
+
+        String topGenre = genreCounts.entrySet().stream()
+                .max(Map.Entry.<String, Integer>comparingByValue()
+                        .thenComparing(Map.Entry.<String, Integer>comparingByKey().reversed()))
+                .map(Map.Entry::getKey)
+                .orElse(null);
+
+        return new PagedWatchlistItems(
+                slice,
+                page,
+                size,
+                totalItems,
+                totalPages,
+                hasMore,
+                unseenCount,
+                avgRating,
+                topGenre
+        );
+    }
+
+    private static List<WatchlistItemView> sortViews(
+            List<WatchlistItemView> views,
+            SortBy sortBy,
+            SortDirection sortDirection
+    ) {
         SortBy effectiveSort = sortBy == null ? SortBy.DEFAULT : sortBy;
         if (effectiveSort == SortBy.DEFAULT) {
             return views;

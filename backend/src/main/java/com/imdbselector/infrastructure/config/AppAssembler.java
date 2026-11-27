@@ -13,6 +13,7 @@ import com.imdbselector.application.usecase.user.ExportUserDataUseCase;
 import com.imdbselector.application.usecase.user.GetUserDetailsUseCase;
 import com.imdbselector.application.usecase.user.MarkMediaSeenUseCase;
 import com.imdbselector.application.usecase.user.UnmarkMediaSeenUseCase;
+import com.imdbselector.application.usecase.user.UpdateQueryFlavorUseCase;
 import com.imdbselector.application.usecase.watchlist.ChangeWatchlistVisibilityUseCase;
 import com.imdbselector.application.usecase.watchlist.DeleteWatchlistUseCase;
 import com.imdbselector.application.usecase.watchlist.GetWatchlistItemsUseCase;
@@ -81,6 +82,7 @@ public final class AppAssembler implements AutoCloseable {
         GetUserDetailsUseCase getUserDetails = new GetUserDetailsUseCase(userRepo, mediaRepo);
         ExportUserDataUseCase exportUserData = new ExportUserDataUseCase(
                 userRepo, watchlistRepo, subscriptionRepo, mediaRepo, clock);
+        UpdateQueryFlavorUseCase updateQueryFlavor = new UpdateQueryFlavorUseCase(userRepo);
         DeleteUserUseCase deleteUser = new DeleteUserUseCase(userRepo, watchlistRepo, subscriptionRepo, txManager);
         MarkMediaSeenUseCase markMediaSeen = new MarkMediaSeenUseCase(userRepo);
         UnmarkMediaSeenUseCase unmarkMediaSeen = new UnmarkMediaSeenUseCase(userRepo);
@@ -125,7 +127,15 @@ public final class AppAssembler implements AutoCloseable {
         AuthController authController = new AuthController(
                 registerUser, loginUser, authenticateToken, changePassword, getUserDetails, settings.cookieSecure());
         authController.registerRoutes(app);
-        new UserController(getUserDetails, exportUserData, deleteUser, markMediaSeen, unmarkMediaSeen, authController).registerRoutes(app);
+        new UserController(
+                getUserDetails,
+                exportUserData,
+                updateQueryFlavor,
+                deleteUser,
+                markMediaSeen,
+                unmarkMediaSeen,
+                authController
+        ).registerRoutes(app);
         new WatchlistController(
                 importWatchlist,
                 previewWatchlistUpdate,

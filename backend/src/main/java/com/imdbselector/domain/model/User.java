@@ -1,6 +1,7 @@
 package com.imdbselector.domain.model;
 
 import com.imdbselector.domain.valueobject.ImdbId;
+import com.imdbselector.domain.valueobject.QueryFlavor;
 import com.imdbselector.domain.valueobject.UserId;
 
 import java.time.Instant;
@@ -20,6 +21,7 @@ public final class User {
     private ImdbId lastGeneratedImdbId;
     private Instant lastGeneratedAt;
     private final Instant createdAt;
+    private QueryFlavor queryFlavor;
 
     public User(
             UserId id,
@@ -29,6 +31,19 @@ public final class User {
             ImdbId lastGeneratedImdbId,
             Instant lastGeneratedAt,
             Instant createdAt
+    ) {
+        this(id, name, passwordHash, seenMediaIds, lastGeneratedImdbId, lastGeneratedAt, createdAt, QueryFlavor.NETFLIX_AND_CHILL);
+    }
+
+    public User(
+            UserId id,
+            String name,
+            String passwordHash,
+            Set<ImdbId> seenMediaIds,
+            ImdbId lastGeneratedImdbId,
+            Instant lastGeneratedAt,
+            Instant createdAt,
+            QueryFlavor queryFlavor
     ) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         if (name == null || name.isBlank()) {
@@ -40,17 +55,18 @@ public final class User {
         this.lastGeneratedImdbId = lastGeneratedImdbId;
         this.lastGeneratedAt = lastGeneratedAt;
         this.createdAt = createdAt == null ? Instant.now() : createdAt;
+        this.queryFlavor = queryFlavor == null ? QueryFlavor.NETFLIX_AND_CHILL : queryFlavor;
     }
 
     public static User create(String name) {
-        return new User(UserId.random(), name, null, Set.of(), null, null, Instant.now());
+        return new User(UserId.random(), name, null, Set.of(), null, null, Instant.now(), QueryFlavor.NETFLIX_AND_CHILL);
     }
 
     public static User register(String name, String passwordHash) {
         if (passwordHash == null || passwordHash.isBlank()) {
             throw new IllegalArgumentException("passwordHash must not be blank");
         }
-        return new User(UserId.random(), name, passwordHash, Set.of(), null, null, Instant.now());
+        return new User(UserId.random(), name, passwordHash, Set.of(), null, null, Instant.now(), QueryFlavor.NETFLIX_AND_CHILL);
     }
 
     public void markAsSeen(ImdbId imdbId) {
@@ -73,6 +89,10 @@ public final class User {
             throw new IllegalArgumentException("passwordHash must not be blank");
         }
         this.passwordHash = newPasswordHash;
+    }
+
+    public void changeQueryFlavor(QueryFlavor queryFlavor) {
+        this.queryFlavor = Objects.requireNonNull(queryFlavor, "queryFlavor must not be null");
     }
 
     public boolean hasSeen(ImdbId imdbId) {
@@ -109,5 +129,9 @@ public final class User {
 
     public Instant createdAt() {
         return createdAt;
+    }
+
+    public QueryFlavor queryFlavor() {
+        return queryFlavor;
     }
 }

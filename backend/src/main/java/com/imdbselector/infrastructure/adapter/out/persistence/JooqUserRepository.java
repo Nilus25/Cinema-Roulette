@@ -3,6 +3,7 @@ package com.imdbselector.infrastructure.adapter.out.persistence;
 import com.imdbselector.application.port.out.UserRepository;
 import com.imdbselector.domain.model.User;
 import com.imdbselector.domain.valueobject.ImdbId;
+import com.imdbselector.domain.valueobject.QueryFlavor;
 import com.imdbselector.domain.valueobject.UserId;
 import com.imdbselector.infrastructure.jooq.tables.records.UsersRecord;
 import org.jooq.DSLContext;
@@ -90,7 +91,8 @@ public final class JooqUserRepository implements UserRepository {
                 seen,
                 lastId == null ? null : new ImdbId(lastId),
                 lastAt == null ? null : lastAt.toInstant(),
-                record.getCreatedAt().toInstant()
+                record.getCreatedAt().toInstant(),
+                QueryFlavor.fromString(record.getQueryFlavor())
         );
     }
 
@@ -110,12 +112,14 @@ public final class JooqUserRepository implements UserRepository {
                     .set(USERS.LAST_GENERATED_IMDB_ID, lastGenId)
                     .set(USERS.LAST_GENERATED_AT, lastGenAt)
                     .set(USERS.CREATED_AT, created)
+                    .set(USERS.QUERY_FLAVOR, user.queryFlavor().name())
                     .onConflict(USERS.ID)
                     .doUpdate()
                     .set(USERS.NAME, user.name())
                     .set(USERS.PASSWORD_HASH, user.passwordHash())
                     .set(USERS.LAST_GENERATED_IMDB_ID, lastGenId)
                     .set(USERS.LAST_GENERATED_AT, lastGenAt)
+                    .set(USERS.QUERY_FLAVOR, user.queryFlavor().name())
                     .execute();
 
             Set<String> seenRawIds = user.seenMediaIds().stream()
