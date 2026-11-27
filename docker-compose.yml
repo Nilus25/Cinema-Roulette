@@ -35,6 +35,8 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        VITE_GIT_COMMIT: ${VITE_GIT_COMMIT:-dev}
     container_name: imdbselector-frontend
     depends_on:
       - backend

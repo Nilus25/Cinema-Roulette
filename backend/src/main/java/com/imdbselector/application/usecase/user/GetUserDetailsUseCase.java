@@ -5,10 +5,13 @@ import com.imdbselector.application.port.out.UserRepository;
 import com.imdbselector.domain.exception.ResourceNotFoundException;
 import com.imdbselector.domain.model.MediaItem;
 import com.imdbselector.domain.model.User;
+import com.imdbselector.domain.valueobject.ImdbId;
 import com.imdbselector.domain.valueobject.UserId;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public final class GetUserDetailsUseCase {
     private final UserRepository userRepository;
@@ -25,7 +28,14 @@ public final class GetUserDetailsUseCase {
         MediaItem lastGenerated = user.lastGeneratedImdbId() == null
                 ? null
                 : mediaItemRepository.findById(user.lastGeneratedImdbId()).orElse(null);
-        List<MediaItem> seenItems = mediaItemRepository.findByIds(user.seenMediaIds());
+
+        Map<ImdbId, MediaItem> byId = mediaItemRepository.findByIds(user.seenMediaIds()).stream()
+                .collect(Collectors.toMap(MediaItem::imdbId, item -> item, (a, b) -> a));
+        List<MediaItem> seenItems = user.seenMediaIds().stream()
+                .map(byId::get)
+                .filter(Objects::nonNull)
+                .toList();
+
         return new UserDetails(user, lastGenerated, seenItems);
     }
 }

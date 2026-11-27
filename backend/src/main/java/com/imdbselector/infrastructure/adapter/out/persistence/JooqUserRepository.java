@@ -10,6 +10,7 @@ import org.jooq.Result;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -71,7 +72,10 @@ public final class JooqUserRepository implements UserRepository {
         Set<ImdbId> seen = dsl.select(USER_SEEN_MEDIA.IMDB_ID)
                 .from(USER_SEEN_MEDIA)
                 .where(USER_SEEN_MEDIA.USER_ID.eq(record.getId()))
-                .fetchSet(r -> new ImdbId(r.value1()));
+                .orderBy(USER_SEEN_MEDIA.SEEN_AT.desc(), USER_SEEN_MEDIA.IMDB_ID.asc())
+                .fetch(r -> new ImdbId(r.value1()))
+                .stream()
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         return Optional.of(mapUser(record, seen));
     }
@@ -114,9 +118,20 @@ public final class JooqUserRepository implements UserRepository {
                     .set(USERS.LAST_GENERATED_AT, lastGenAt)
                     .execute();
 
-            tx.deleteFrom(USER_SEEN_MEDIA)
-                    .where(USER_SEEN_MEDIA.USER_ID.eq(user.id().value()))
-                    .execute();
+            Set<String> seenRawIds = user.seenMediaIds().stream()
+                    .map(ImdbId::value)
+                    .collect(Collectors.toSet());
+
+            if (seenRawIds.isEmpty()) {
+                tx.deleteFrom(USER_SEEN_MEDIA)
+                        .where(USER_SEEN_MEDIA.USER_ID.eq(user.id().value()))
+                        .execute();
+            } else {
+                tx.deleteFrom(USER_SEEN_MEDIA)
+                        .where(USER_SEEN_MEDIA.USER_ID.eq(user.id().value())
+                                .and(USER_SEEN_MEDIA.IMDB_ID.notIn(seenRawIds)))
+                        .execute();
+            }
 
             for (ImdbId imdbId : user.seenMediaIds()) {
                 tx.insertInto(USER_SEEN_MEDIA)

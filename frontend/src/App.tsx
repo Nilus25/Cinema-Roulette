@@ -267,7 +267,7 @@ export function App() {
                 })
               }
               lastGeneratedPrompt={lastGeneratedPrompt}
-              recentSeen={userDetails.seenItems.slice(-5).reverse()}
+              recentSeen={userDetails.seenItems.slice(0, 5)}
               onMarkLastSeen={(imdbId) =>
                 runAction(async () => {
                   await api.markSeen(imdbId);
@@ -453,6 +453,10 @@ export function App() {
             )}
           </aside>
         </div>
+
+        <footer className="mt-8 pb-2 text-center font-mono text-[11px] tracking-wider text-[#FF8DC7]/55">
+          v{__APP_VERSION__}:{__GIT_COMMIT__}
+        </footer>
       </div>
 
       {pendingUpdate && (

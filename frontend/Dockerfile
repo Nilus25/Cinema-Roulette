@@ -3,6 +3,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+ARG VITE_GIT_COMMIT=dev
+ENV VITE_GIT_COMMIT=${VITE_GIT_COMMIT}
 RUN npm run build
 
 FROM nginx:alpine
