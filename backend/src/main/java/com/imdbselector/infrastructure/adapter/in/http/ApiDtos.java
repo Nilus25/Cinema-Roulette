@@ -1,5 +1,6 @@
 package com.imdbselector.infrastructure.adapter.in.http;
 
+import com.imdbselector.application.usecase.selection.SelectionResult;
 import com.imdbselector.application.usecase.user.UserDetails;
 import com.imdbselector.application.usecase.user.UserExportData;
 import com.imdbselector.application.usecase.watchlist.PagedWatchlistItems;
@@ -284,6 +285,18 @@ public final class ApiDtos {
                     keywords,
                     excludeSeen,
                     query
+            );
+        }
+    }
+
+    public record SelectionResponse(
+            MediaItemResponse picked,
+            List<MediaItemResponse> reelCandidates
+    ) {
+        public static SelectionResponse from(SelectionResult result) {
+            return new SelectionResponse(
+                    MediaItemResponse.from(result.picked()),
+                    result.reelCandidates().stream().map(MediaItemResponse::from).toList()
             );
         }
     }

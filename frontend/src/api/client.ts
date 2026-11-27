@@ -1,9 +1,9 @@
 import type {
   FilterMetadata,
   FilterState,
-  MediaItemResponse,
   PagedWatchlistItemsResponse,
   QueryFlavor,
+  SelectionResponse,
   SortBy,
   SortDirection,
   UserDetailsResponse,
@@ -195,7 +195,7 @@ export const api = {
   },
 
   selectRandom: (watchlistId: string, filter: FilterState) =>
-    request<MediaItemResponse>(`/api/watchlists/${watchlistId}/select`, {
+    request<SelectionResponse>(`/api/watchlists/${watchlistId}/select`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

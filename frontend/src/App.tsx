@@ -109,6 +109,7 @@ export function App() {
   const [reelSpinning, setReelSpinning] = useState(false);
   const [reelSpinKey, setReelSpinKey] = useState(0);
   const [reelWinner, setReelWinner] = useState<MediaItemResponse | null>(null);
+  const [reelCandidates, setReelCandidates] = useState<MediaItemResponse[]>([]);
   const [spinHistory, setSpinHistory] = useState<MediaItemResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pendingUpdate, setPendingUpdate] = useState<{
@@ -403,6 +404,7 @@ export function App() {
                   setPicked(null);
                   setSpinHistory([]);
                   setReelWinner(null);
+                  setReelCandidates([]);
                   setFilter(EMPTY_FILTER);
                   setItems([]);
                   setPage(0);
@@ -459,7 +461,7 @@ export function App() {
 
                   <PickCard
                     canPick={Boolean(selectedWatchlistId) && queryValidation.valid}
-                    candidates={items.map((row) => row.item)}
+                    candidates={reelCandidates.length > 0 ? reelCandidates : items.map((row) => row.item)}
                     candidateCount={totalItems}
                     loading={picking}
                     spinning={reelSpinning}
@@ -477,7 +479,8 @@ export function App() {
                         setPicking(true);
                         try {
                           const result = await api.selectRandom(selectedWatchlistId, filter);
-                          setReelWinner(result);
+                          setReelCandidates(result.reelCandidates);
+                          setReelWinner(result.picked);
                           setReelSpinKey((k) => k + 1);
                           setReelSpinning(true);
                         } finally {

@@ -1,7 +1,7 @@
 package com.imdbselector.infrastructure.adapter.in.http;
 
 import com.imdbselector.application.usecase.selection.SelectRandomMediaUseCase;
-import com.imdbselector.domain.model.MediaItem;
+import com.imdbselector.application.usecase.selection.SelectionResult;
 import com.imdbselector.domain.valueobject.UserId;
 import com.imdbselector.domain.valueobject.WatchlistId;
 import io.javalin.Javalin;
@@ -23,8 +23,8 @@ public final class SelectionController {
                     ? ApiDtos.SelectRequest.empty()
                     : ctx.bodyAsClass(ApiDtos.SelectRequest.class);
 
-            MediaItem picked = selectRandomMedia.execute(watchlistId, userId, req.toCriteria());
-            ctx.json(ApiDtos.MediaItemResponse.from(picked));
+            SelectionResult result = selectRandomMedia.executeWithReel(watchlistId, userId, req.toCriteria());
+            ctx.json(ApiDtos.SelectionResponse.from(result));
         });
     }
 }
