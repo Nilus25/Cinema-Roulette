@@ -1,4 +1,4 @@
-import { Check, Clapperboard, LogOut, Popcorn, Sparkles } from 'lucide-react';
+import { Check, Clapperboard, LogOut, Popcorn, Settings, Sparkles } from 'lucide-react';
 import type { MediaItemResponse } from '../types/api';
 
 interface ProfileStats {
@@ -10,6 +10,7 @@ interface ProfileStats {
 
 interface ProfileBarProps {
   username: string;
+  onOpenAccount: () => void;
   onLogout: () => Promise<void>;
   lastGeneratedPrompt: MediaItemResponse | null;
   recentSeen: MediaItemResponse[];
@@ -20,6 +21,7 @@ interface ProfileBarProps {
 
 export function ProfileBar({
   username,
+  onOpenAccount,
   onLogout,
   lastGeneratedPrompt,
   recentSeen,
@@ -38,15 +40,26 @@ export function ProfileBar({
             <Popcorn className="h-4 w-4 shrink-0 text-[#39FF14]" />
             <span className="truncate">{username}</span>
           </div>
-          <button
-            type="button"
-            onClick={onLogout}
-            title="Sign out"
-            className="inline-flex items-center gap-1 rounded border border-[#39FF14]/50 bg-[#090118] px-2 py-0.5 text-[11px] font-bold text-green-200 transition hover:border-[#FF2E54] hover:text-[#FF2E54]"
-          >
-            <LogOut className="h-3 w-3" />
-            <span>Logout</span>
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={onOpenAccount}
+              title="Account & Backup"
+              aria-label="Account & Backup"
+              className="inline-flex items-center justify-center rounded border border-[#39FF14]/50 bg-[#090118] p-1 text-green-200 transition hover:border-[#00E5FF] hover:text-[#00E5FF]"
+            >
+              <Settings className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={onLogout}
+              title="Sign out"
+              className="inline-flex items-center gap-1 rounded border border-[#39FF14]/50 bg-[#090118] px-2 py-0.5 text-[11px] font-bold text-green-200 transition hover:border-[#FF2E54] hover:text-[#FF2E54]"
+            >
+              <LogOut className="h-3 w-3" />
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
 
         <div className="space-y-2.5 text-xs">
@@ -112,7 +125,15 @@ export function ProfileBar({
           <div className="flex items-start gap-2">
             <Sparkles className="h-4 w-4 shrink-0 text-[#FFE600] mt-0.5" />
             <span>
-              From your last session: <strong className="text-[#39FF14]">{lastGeneratedPrompt.title}</strong>
+              From your last session:{' '}
+              <a
+                href={lastGeneratedPrompt.imdbUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="font-bold text-[#39FF14] underline decoration-[#39FF14]/50 underline-offset-2 transition hover:text-[#FFE600] hover:decoration-[#FFE600]"
+              >
+                {lastGeneratedPrompt.title}
+              </a>
               {lastGeneratedPrompt.releaseYear ? ` (${lastGeneratedPrompt.releaseYear})` : ''}. Watched it?
             </span>
           </div>

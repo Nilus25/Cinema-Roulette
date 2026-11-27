@@ -6,9 +6,11 @@ import com.imdbselector.application.port.out.UserRepository;
 import com.imdbselector.application.port.out.WatchlistRepository;
 import com.imdbselector.application.port.out.WatchlistSubscriptionRepository;
 import com.imdbselector.application.usecase.auth.AuthenticateTokenUseCase;
+import com.imdbselector.application.usecase.auth.ChangePasswordUseCase;
 import com.imdbselector.application.usecase.auth.LoginUserUseCase;
 import com.imdbselector.application.usecase.auth.RegisterUserUseCase;
 import com.imdbselector.application.usecase.user.DeleteUserUseCase;
+import com.imdbselector.application.usecase.user.ExportUserDataUseCase;
 import com.imdbselector.application.usecase.user.GetUserDetailsUseCase;
 import com.imdbselector.application.usecase.user.MarkMediaSeenUseCase;
 import com.imdbselector.application.usecase.user.UnmarkMediaSeenUseCase;
@@ -59,6 +61,7 @@ class HttpApiTest {
                 new RegisterUserUseCase(userRepo, hasher, tokenPort, noopTx),
                 new LoginUserUseCase(userRepo, hasher, tokenPort),
                 new AuthenticateTokenUseCase(tokenPort),
+                new ChangePasswordUseCase(userRepo, hasher, tokenPort),
                 getDetails
         );
         authController.registerRoutes(app);
@@ -82,6 +85,7 @@ class HttpApiTest {
         };
         new UserController(
                 getDetails,
+                new ExportUserDataUseCase(userRepo, emptyWlRepo, emptySubRepo, mediaRepo, Clock.systemUTC()),
                 new DeleteUserUseCase(userRepo, emptyWlRepo, emptySubRepo, noopTx),
                 new MarkMediaSeenUseCase(userRepo),
                 new UnmarkMediaSeenUseCase(userRepo),
@@ -126,11 +130,50 @@ class HttpApiTest {
             assertThat(me.headers().firstValue("X-Content-Type-Options")).contains("nosniff");
             assertThat(me.headers().firstValue("X-Frame-Options")).contains("DENY");
 
+            // Authenticated /api/users/me/export -> 200 JSON backup without passwordHash
+            HttpResponse<String> exportRes = client.send(
+                    HttpRequest.newBuilder(URI.create(base + "/api/users/me/export")).GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertThat(exportRes.statusCode()).isEqualTo(200);
+            assertThat(exportRes.headers().firstValue("Content-Disposition").orElse(""))
+                    .contains("attachment; filename=\"cinema-roulette-backup-");
+            assertThat(exportRes.headers().firstValue("Cache-Control")).contains("no-store");
+            assertThat(exportRes.body()).contains("\"username\":\"Nil\"");
+            assertThat(exportRes.body()).doesNotContain("passwordHash");
+
+            // Change password: wrong current password -> 401
+            HttpResponse<String> badPwdChange = client.send(
+                    HttpRequest.newBuilder(URI.create(base + "/api/auth/password"))
+                            .header("Content-Type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString("{\"currentPassword\":\"wrong\",\"newPassword\":\"newsecret123\"}"))
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertThat(badPwdChange.statusCode()).isEqualTo(401);
+
+            // Change password: valid -> 204 and rotates cookie
+            HttpResponse<String> okPwdChange = client.send(
+                    HttpRequest.newBuilder(URI.create(base + "/api/auth/password"))
+                            .header("Content-Type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString("{\"currentPassword\":\"secret123\",\"newPassword\":\"newsecret123\"}"))
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertThat(okPwdChange.statusCode()).isEqualTo(204);
+            assertThat(okPwdChange.headers().firstValue("Cache-Control")).contains("no-store");
+
+            // Login with new password succeeds
+            HttpResponse<String> loginNew = client.send(
+                    HttpRequest.newBuilder(URI.create(base + "/api/auth/login"))
+                            .header("Content-Type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString("{\"username\":\"Nil\",\"password\":\"newsecret123\"}"))
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertThat(loginNew.statusCode()).isEqualTo(200);
+
             HttpRequest badLogin = HttpRequest.newBuilder(URI.create(base + "/api/auth/login"))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString("{\"username\":\"Nil\",\"password\":\"wrongpass\"}"))
                     .build();
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 4; i++) {
                 HttpResponse<String> attempt = client.send(badLogin, HttpResponse.BodyHandlers.ofString());
                 assertThat(attempt.statusCode()).isEqualTo(401);
             }

@@ -1,6 +1,7 @@
 package com.imdbselector.infrastructure.adapter.in.http;
 
 import com.imdbselector.application.usecase.user.UserDetails;
+import com.imdbselector.application.usecase.user.UserExportData;
 import com.imdbselector.application.usecase.watchlist.WatchlistItemView;
 import com.imdbselector.application.usecase.watchlist.WatchlistSummary;
 import com.imdbselector.domain.model.MediaItem;
@@ -26,6 +27,9 @@ public final class ApiDtos {
     }
 
     public record AuthRequest(String username, String password) {
+    }
+
+    public record ChangePasswordRequest(String currentPassword, String newPassword) {
     }
 
     public record SubscribeCodeRequest(String shareCode) {
@@ -64,6 +68,75 @@ public final class ApiDtos {
                     details.user().name(),
                     details.unseenLastGeneratedPrompt().map(MediaItemResponse::from).orElse(null),
                     details.seenItems().stream().map(MediaItemResponse::from).toList()
+            );
+        }
+    }
+
+    public record UserExportResponse(
+            Instant exportedAt,
+            String username,
+            Instant createdAt,
+            String lastGeneratedImdbId,
+            Instant lastGeneratedAt,
+            List<MediaItemResponse> seenMovies,
+            List<OwnedWatchlistExportResponse> ownedWatchlists,
+            List<SubscribedWatchlistSummaryResponse> subscriptions
+    ) {
+        public static UserExportResponse from(UserExportData data) {
+            User user = data.user();
+            return new UserExportResponse(
+                    data.exportedAt(),
+                    user.name(),
+                    user.createdAt(),
+                    user.lastGeneratedImdbId() == null ? null : user.lastGeneratedImdbId().value(),
+                    user.lastGeneratedAt(),
+                    data.seenMovies().stream().map(MediaItemResponse::from).toList(),
+                    data.ownedWatchlists().stream().map(OwnedWatchlistExportResponse::from).toList(),
+                    data.subscriptions().stream().map(SubscribedWatchlistSummaryResponse::from).toList()
+            );
+        }
+    }
+
+    public record OwnedWatchlistExportResponse(
+            UUID id,
+            String name,
+            String visibility,
+            String shareCode,
+            Instant createdAt,
+            Instant updatedAt,
+            List<MediaItemResponse> items
+    ) {
+        public static OwnedWatchlistExportResponse from(UserExportData.OwnedWatchlistExport export) {
+            Watchlist wl = export.watchlist();
+            return new OwnedWatchlistExportResponse(
+                    wl.id().value(),
+                    wl.name(),
+                    wl.visibility().name(),
+                    wl.shareCode(),
+                    wl.createdAt(),
+                    wl.updatedAt(),
+                    export.items().stream().map(MediaItemResponse::from).toList()
+            );
+        }
+    }
+
+    public record SubscribedWatchlistSummaryResponse(
+            UUID id,
+            String name,
+            String ownerName,
+            String visibility,
+            int itemCount,
+            Instant updatedAt
+    ) {
+        public static SubscribedWatchlistSummaryResponse from(UserExportData.SubscribedWatchlistSummary summary) {
+            Watchlist wl = summary.watchlist();
+            return new SubscribedWatchlistSummaryResponse(
+                    wl.id().value(),
+                    wl.name(),
+                    summary.ownerName(),
+                    wl.visibility().name(),
+                    wl.mediaItemIds().size(),
+                    wl.updatedAt()
             );
         }
     }

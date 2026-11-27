@@ -15,7 +15,7 @@ import java.util.Set;
 public final class User {
     private final UserId id;
     private final String name;
-    private final String passwordHash;
+    private String passwordHash;
     private final Set<ImdbId> seenMediaIds;
     private ImdbId lastGeneratedImdbId;
     private Instant lastGeneratedAt;
@@ -66,6 +66,13 @@ public final class User {
     public void recordGenerated(ImdbId imdbId, Instant generatedAt) {
         this.lastGeneratedImdbId = Objects.requireNonNull(imdbId, "imdbId must not be null");
         this.lastGeneratedAt = Objects.requireNonNull(generatedAt, "generatedAt must not be null");
+    }
+
+    public void changePasswordHash(String newPasswordHash) {
+        if (newPasswordHash == null || newPasswordHash.isBlank()) {
+            throw new IllegalArgumentException("passwordHash must not be blank");
+        }
+        this.passwordHash = newPasswordHash;
     }
 
     public boolean hasSeen(ImdbId imdbId) {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { Clapperboard, Film, ListVideo, User } from 'lucide-react';
 import { api } from './api/client';
+import { AccountModal } from './components/AccountModal';
 import { AuthPanel } from './components/AuthPanel';
 import { FilterPanel } from './components/FilterPanel';
 import { PickCard } from './components/PickCard';
@@ -97,6 +98,7 @@ export function App() {
     preview: WatchlistUpdatePreviewResponse;
   } | null>(null);
   const [applyingUpdate, setApplyingUpdate] = useState(false);
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
 
   const refreshWatchlists = useCallback(async () => {
     const [accessible, pub] = await Promise.all([
@@ -255,6 +257,7 @@ export function App() {
           <aside className={`${mobileTab === 'profile' ? 'block' : 'hidden'} lg:block order-2 lg:order-1`}>
             <ProfileBar
               username={userDetails.name}
+              onOpenAccount={() => setAccountModalOpen(true)}
               onLogout={() =>
                 runAction(async () => {
                   await api.logout();
@@ -517,6 +520,13 @@ export function App() {
               setApplyingUpdate(false);
             }
           }}
+        />
+      )}
+
+      {accountModalOpen && (
+        <AccountModal
+          username={userDetails.name}
+          onClose={() => setAccountModalOpen(false)}
         />
       )}
     </div>
